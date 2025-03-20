@@ -6,7 +6,7 @@ from datetime import datetime
 
 # chat gpt learn me how to use APIs
 OCR_API_URL = "https://api.ocr.space/parse/image"
-OCR_API_KEY = "K86506114588957"
+OCR_API_KEY = "MY_API" #change it to real API
 
 DB_NAME = "transactions.db"
 
