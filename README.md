@@ -1,5 +1,4 @@
 # Transaction Analysis and Management System
-#### Video Demo:  <(https://youtu.be/jW2117Ac5DU)>
 #### Description:
 
 The **Transaction Analysis and Management System** is an advanced Python-based solution that utilizes **OCR (Optical Character Recognition)** to extract and analyze financial transaction details from images. The extracted data is then structured and stored in a **SQLite database**, making it easier to manage and analyze financial transactions. The system is designed to automate the process of extracting critical financial details such as transaction amount, sender, receiver’s phone number, and date, reducing manual efforts and potential errors.
