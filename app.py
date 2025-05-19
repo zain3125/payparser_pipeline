@@ -4,13 +4,12 @@ import re
 import json
 from datetime import datetime
 
-# chat gpt learn me how to use APIs
+# global variables 
 OCR_API_URL = "https://api.ocr.space/parse/image"
-OCR_API_KEY = "MY_API" #change it to real API
-
+OCR_API_KEY = "MY_API" # change this with your API
 DB_NAME = "transactions.db"
 
-receiver_name = input("Enter receiver naem: ")
+receiver_name = input("Enter receiver name: ")
 
 
 def extract_text_from_image(image_path):
@@ -21,7 +20,7 @@ def extract_text_from_image(image_path):
             files={"file": image_file},
             data={
                 "apikey": OCR_API_KEY,
-                "language": "eng",
+                "language": "auto",
                 "scale": "true",
                 "OCREngine": "2",
                 "isOverlayRequired": "false"
@@ -41,7 +40,7 @@ def extract_text_from_image(image_path):
 
 
 
-def parse_transaction_details(text):
+def parse_transaction_details_instapay(text):
     """GPT learn me how to make formula to detect inputs"""
     amount_match = re.search(r"([\d,]+)\s*EGP", text)
     amount = amount_match.group(1).replace(",", "") if amount_match else None
@@ -61,6 +60,50 @@ def parse_transaction_details(text):
     else:
         date = None
         month_table = "Unknown"
+
+    return amount, sender, phone_number, date, month_table
+
+def parse_transaction_details_cash(text):
+    """Parse Arabic cash transfer receipt."""
+    arabic_to_english_digits = str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")
+    text = text.translate(arabic_to_english_digits)
+
+    arabic_months = {
+        "يناير": "January",
+        "فبراير": "February",
+        "مارس": "March",
+        "أبريل": "April",
+        "ابريل": "April",
+        "مايو": "May",
+        "يونيو": "June",
+        "يوليو": "July",
+        "أغسطس": "August",
+        "اغسطس": "August",
+        "سبتمبر": "September",
+        "أكتوبر": "October",
+        "اكتوبر": "October",
+        "نوفمبر": "November",
+        "ديسمبر": "December"
+    }
+
+    amount_match = re.search(r"([\d,]+)\s*جنيه", text)
+    amount = amount_match.group(1).replace(",", "") if amount_match else None
+
+    phone_match = re.search(r"\b(010|011|012|015)\d{8}\b", text)
+    phone_number = phone_match.group(0) if phone_match else None
+
+    
+    date_match = re.search(r"(\d{1,2})\s(\w+)\s(\d{1,2}:\d{2})\s?(\d{4})", text)
+    if date_match:
+        day, month_ar, time, year = date_match.groups()
+        month_en = arabic_months.get(month_ar, "Unknown")
+        date = f"{day} {month_en} {year} {time}"
+        month_table = f"{month_en}_{year}"
+    else:
+        date = None
+        month_table = "Unknown"
+
+    sender = "Cash"
 
     return amount, sender, phone_number, date, month_table
 
@@ -112,20 +155,35 @@ text = extract_text_from_image(image_path)
 
 if text:
     print("Extracted text:\n", text)
+    if "EGP" in text:
+        amount, sender, phone_number, date, month_table = parse_transaction_details_instapay(text)
 
-    amount, sender, phone_number, date, month_table = parse_transaction_details(text)
+        if all([amount, sender, date]):
+            print(f"Enterd data:")
+            print(f"Amount: {amount} EGP")
+            print(f"From: {sender}")
+            print(f"To: {receiver_name}")
+            print(f"phone_number: {phone_number}")
+            print(f"Date: {date}")
+            print(f"Saved in: {month_table}")
 
-    if all([amount, sender, date]):
-        print(f"Enterd data:")
-        print(f"Amount: {amount} EGP")
-        print(f"From: {sender}")
-        print(f"To: {receiver_name}")
-        print(f"phone_number: {phone_number}")
-        print(f"Date: {date}")
-        print(f"Saved in: {month_table}")
-
-        insert_transaction(DB_NAME, month_table, amount, sender, receiver_name, phone_number, date)
+            insert_transaction(DB_NAME, month_table, amount, sender, receiver_name, phone_number, date)
+        else:
+            print("Error 73")
     else:
-        print("Error 73")
+        amount, sender, phone_number, date, month_table = parse_transaction_details_cash(text)
+
+        if all([amount, sender, date]):
+            print(f"Enterd data:")
+            print(f"Amount: {amount} EGP")
+            print(f"From: {sender}")
+            print(f"To: {receiver_name}")
+            print(f"phone_number: {phone_number}")
+            print(f"Date: {date}")
+            print(f"Saved in: {month_table}")
+
+            insert_transaction(DB_NAME, month_table, amount, sender, receiver_name, phone_number, date)
+        else:
+            print("Error 73")
 else:
     print("Error 74")
