@@ -1,0 +1,39 @@
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment files
+.env
+
+# Excel and CSV files
+*.xlsx
+*.xls
+*.csv
+
+# Image files
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.webp
+
+# Database files
+*.sqlite3
+*.db
+
+# JSON files
+*.json
+
+# Node.js modules and tokens
+node_modules/
+tokens/
+
+# VSCode settings (optional, remove if needed)
+.vscode/
+
+# MacOS & Windows system files (optional)
+.DS_Store
+Thumbs.db
