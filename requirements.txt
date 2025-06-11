@@ -1,1 +1,5 @@
-python-dotenv\nwatchdog\nrequests\npandas\nopenpyxl
+python-dotenv
+nwatchdog
+nrequests
+npandas
+nopenpyxl
