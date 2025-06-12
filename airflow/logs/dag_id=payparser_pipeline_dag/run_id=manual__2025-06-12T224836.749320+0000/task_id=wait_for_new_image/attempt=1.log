@@ -1,0 +1,22 @@
+[2025-06-12T22:48:38.167+0000] {local_task_job_runner.py:123} INFO - ::group::Pre task execution logs
+[2025-06-12T22:48:38.184+0000] {taskinstance.py:2614} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: payparser_pipeline_dag.wait_for_new_image manual__2025-06-12T22:48:36.749320+00:00 [queued]>
+[2025-06-12T22:48:38.191+0000] {taskinstance.py:2614} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: payparser_pipeline_dag.wait_for_new_image manual__2025-06-12T22:48:36.749320+00:00 [queued]>
+[2025-06-12T22:48:38.192+0000] {taskinstance.py:2867} INFO - Starting attempt 1 of 2
+[2025-06-12T22:48:38.214+0000] {taskinstance.py:2890} INFO - Executing <Task(NewImageSensor): wait_for_new_image> on 2025-06-12 22:48:36.749320+00:00
+[2025-06-12T22:48:38.219+0000] {warnings.py:112} WARNING - /home/***/.local/lib/python3.12/site-packages/***/task/task_runner/standard_task_runner.py:70: DeprecationWarning: This process (pid=119) is multi-threaded, use of fork() may lead to deadlocks in the child.
+  pid = os.fork()
+
+[2025-06-12T22:48:38.221+0000] {standard_task_runner.py:72} INFO - Started process 120 to run task
+[2025-06-12T22:48:38.222+0000] {standard_task_runner.py:104} INFO - Running: ['***', 'tasks', 'run', 'payparser_pipeline_dag', 'wait_for_new_image', 'manual__2025-06-12T22:48:36.749320+00:00', '--job-id', '44', '--raw', '--subdir', 'DAGS_FOLDER/payparser_dag.py', '--cfg-path', '/tmp/tmpmt_3krgi']
+[2025-06-12T22:48:38.225+0000] {standard_task_runner.py:105} INFO - Job 44: Subtask wait_for_new_image
+[2025-06-12T22:48:38.279+0000] {task_command.py:467} INFO - Running <TaskInstance: payparser_pipeline_dag.wait_for_new_image manual__2025-06-12T22:48:36.749320+00:00 [running]> on host 0305595458b2
+[2025-06-12T22:48:38.364+0000] {taskinstance.py:3134} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='zain' AIRFLOW_CTX_DAG_ID='payparser_pipeline_dag' AIRFLOW_CTX_TASK_ID='wait_for_new_image' AIRFLOW_CTX_EXECUTION_DATE='2025-06-12T22:48:36.749320+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2025-06-12T22:48:36.749320+00:00'
+[2025-06-12T22:48:38.365+0000] {taskinstance.py:732} INFO - ::endgroup::
+[2025-06-12T22:48:38.378+0000] {image_sensor.py:13} INFO - Checking for new images in: /opt/***/shared/downloads
+[2025-06-12T22:48:38.384+0000] {image_sensor.py:18} INFO - Found image: /opt/***/shared/downloads/177300779884778@lid/photo_1749764559443.jpeg
+[2025-06-12T22:48:38.399+0000] {base.py:339} INFO - Success criteria met. Exiting.
+[2025-06-12T22:48:38.408+0000] {taskinstance.py:341} INFO - ::group::Post task execution logs
+[2025-06-12T22:48:38.409+0000] {taskinstance.py:353} INFO - Marking task as SUCCESS. dag_id=payparser_pipeline_dag, task_id=wait_for_new_image, run_id=manual__2025-06-12T22:48:36.749320+00:00, execution_date=20250612T224836, start_date=20250612T224838, end_date=20250612T224838
+[2025-06-12T22:48:38.440+0000] {local_task_job_runner.py:266} INFO - Task exited with return code 0
+[2025-06-12T22:48:38.466+0000] {taskinstance.py:3901} INFO - 1 downstream tasks scheduled from follow-on schedule check
+[2025-06-12T22:48:38.469+0000] {local_task_job_runner.py:245} INFO - ::endgroup::

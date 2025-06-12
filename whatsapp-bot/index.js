@@ -23,7 +23,7 @@ venom
 
 function start(client) {
   client.onMessage(async (message) => {
-    const isFromGroup = message.isGroupMsg === true && message.groupInfo && message.groupInfo.name === 'فودافون كاش 💸';
+    const isFromGroup = message.isGroupMsg === true && message.groupInfo && message.groupInfo.name === 'test';
 
     if (
       message.mimetype &&
@@ -36,7 +36,7 @@ function start(client) {
 
         const author = message.author || message.from;
         const authorName = authorNames[author] || author;
-        const authorFolder = path.join(__dirname, 'downloads', authorName);
+        const authorFolder = path.join(__dirname, '..', 'airflow', 'shared', 'downloads', authorName);
 
         if (!fs.existsSync(authorFolder)) {
           fs.mkdirSync(authorFolder, { recursive: true });
