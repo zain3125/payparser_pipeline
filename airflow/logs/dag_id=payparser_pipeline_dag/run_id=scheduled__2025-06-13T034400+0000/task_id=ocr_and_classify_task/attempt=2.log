@@ -1,0 +1,27 @@
+[2025-06-13T03:46:12.665+0000] {local_task_job_runner.py:123} INFO - ::group::Pre task execution logs
+[2025-06-13T03:46:12.688+0000] {taskinstance.py:2614} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: payparser_pipeline_dag.ocr_and_classify_task scheduled__2025-06-13T03:44:00+00:00 [queued]>
+[2025-06-13T03:46:12.699+0000] {taskinstance.py:2614} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: payparser_pipeline_dag.ocr_and_classify_task scheduled__2025-06-13T03:44:00+00:00 [queued]>
+[2025-06-13T03:46:12.699+0000] {taskinstance.py:2867} INFO - Starting attempt 2 of 2
+[2025-06-13T03:46:12.713+0000] {taskinstance.py:2890} INFO - Executing <Task(PythonOperator): ocr_and_classify_task> on 2025-06-13 03:44:00+00:00
+[2025-06-13T03:46:12.719+0000] {warnings.py:112} WARNING - /home/***/.local/lib/python3.12/site-packages/***/task/task_runner/standard_task_runner.py:70: DeprecationWarning: This process (pid=180) is multi-threaded, use of fork() may lead to deadlocks in the child.
+  pid = os.fork()
+
+[2025-06-13T03:46:12.721+0000] {standard_task_runner.py:72} INFO - Started process 181 to run task
+[2025-06-13T03:46:12.721+0000] {standard_task_runner.py:104} INFO - Running: ['***', 'tasks', 'run', 'payparser_pipeline_dag', 'ocr_and_classify_task', 'scheduled__2025-06-13T03:44:00+00:00', '--job-id', '131', '--raw', '--subdir', 'DAGS_FOLDER/payparser_dag.py', '--cfg-path', '/tmp/tmp2hxnc09t']
+[2025-06-13T03:46:12.723+0000] {standard_task_runner.py:105} INFO - Job 131: Subtask ocr_and_classify_task
+[2025-06-13T03:46:12.784+0000] {task_command.py:467} INFO - Running <TaskInstance: payparser_pipeline_dag.ocr_and_classify_task scheduled__2025-06-13T03:44:00+00:00 [running]> on host 99fad00d6fef
+[2025-06-13T03:46:12.873+0000] {taskinstance.py:3134} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='zain' AIRFLOW_CTX_DAG_ID='payparser_pipeline_dag' AIRFLOW_CTX_TASK_ID='ocr_and_classify_task' AIRFLOW_CTX_EXECUTION_DATE='2025-06-13T03:44:00+00:00' AIRFLOW_CTX_TRY_NUMBER='2' AIRFLOW_CTX_DAG_RUN_ID='scheduled__2025-06-13T03:44:00+00:00'
+[2025-06-13T03:46:12.874+0000] {taskinstance.py:732} INFO - ::endgroup::
+[2025-06-13T03:46:12.899+0000] {logging_mixin.py:190} INFO - 🔍 OCR processing: /opt/***/shared/downloads/Test/WhatsApp Image 2025-06-10 at 01.06.41_99a98d8f.jpg
+[2025-06-13T03:46:13.994+0000] {logging_mixin.py:190} INFO - Date formatting error: time data '10 Jun 2025 01:06 AM' does not match format '%d %B %Y %I:%M %p'
+[2025-06-13T03:46:13.994+0000] {logging_mixin.py:190} INFO - 🔍 OCR processing: /opt/***/shared/downloads/Test/WhatsApp Image 2025-06-10 at 18.23.24_307f356c.jpg
+[2025-06-13T03:46:15.061+0000] {logging_mixin.py:190} INFO - Date formatting error: time data '10 Jun 2025 06:23 PM' does not match format '%d %B %Y %I:%M %p'
+[2025-06-13T03:46:15.062+0000] {logging_mixin.py:190} INFO - 🔍 OCR processing: /opt/***/shared/downloads/Test/WhatsApp Image 2025-06-12 at 00.30.14_a8346959.jpg
+[2025-06-13T03:46:16.469+0000] {logging_mixin.py:190} INFO - 🔍 OCR processing: /opt/***/shared/downloads/Test/WhatsApp Image 2025-06-12 at 23.10.05_0c4f87f3.jpg
+[2025-06-13T03:46:17.951+0000] {logging_mixin.py:190} INFO - 🔍 OCR processing: /opt/***/shared/downloads/Test/WhatsApp Image 2025-06-13 at 01.34.27_5af07ffa.jpg
+[2025-06-13T03:46:19.047+0000] {python.py:240} INFO - Done. Returned value was: None
+[2025-06-13T03:46:19.056+0000] {taskinstance.py:341} INFO - ::group::Post task execution logs
+[2025-06-13T03:46:19.056+0000] {taskinstance.py:353} INFO - Marking task as SUCCESS. dag_id=payparser_pipeline_dag, task_id=ocr_and_classify_task, run_id=scheduled__2025-06-13T03:44:00+00:00, execution_date=20250613T034400, start_date=20250613T034612, end_date=20250613T034619
+[2025-06-13T03:46:19.108+0000] {local_task_job_runner.py:266} INFO - Task exited with return code 0
+[2025-06-13T03:46:19.126+0000] {taskinstance.py:3901} INFO - 1 downstream tasks scheduled from follow-on schedule check
+[2025-06-13T03:46:19.129+0000] {local_task_job_runner.py:245} INFO - ::endgroup::
