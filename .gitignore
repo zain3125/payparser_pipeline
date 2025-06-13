@@ -37,3 +37,7 @@ tokens/
 # MacOS & Windows system files (optional)
 .DS_Store
 Thumbs.db
+
+# logs folder
+airflow/logs/
+airflow\logs\scheduler\2025-06-13
