@@ -86,7 +86,9 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
     - ${AIRFLOW_PROJ_DIR:-.}/shared:/opt/airflow/shared
     - ${AIRFLOW_PROJ_DIR:-.}/app:/opt/airflow/app
+    - ${AIRFLOW_PROJ_DIR:-.}/data_bases:/opt/airflow/data_bases
     - ../app:/opt/airflow/app
+    - ../data_bases:/opt/airflow/data_bases
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
