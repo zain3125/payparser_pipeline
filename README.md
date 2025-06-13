@@ -1,114 +1,137 @@
-# Transaction Parser & OCR System
+# 💸 Transaction Parser & OCR Pipeline
 
-This project is a WhatsApp-based transaction parsing system that extracts, processes, and stores financial receipts (e.g., Instapay & Vodafone Cash) using OCR.
+A robust, automated pipeline for extracting and organizing transaction data from financial receipts using OCR, with orchestration by Apache Airflow.
 
-## 📌 Features
+---
 
-- ✅ Automatically listens to WhatsApp group messages.
-- 🖼 Extracts and saves image receipts to categorized folders.
-- 🔍 Uses [OCR.Space API](https://ocr.space/) to extract text from images.
-- 🗃 Stores parsed data in a local SQLite3 database.
-- 🧠 Built with Python for data parsing and Node.js (Venom Bot) for WhatsApp automation.
+[![Python](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
+[![Airflow](https://img.shields.io/badge/airflow-2.x-blue.svg)](https://airflow.apache.org/)
+
+---
+
+## 🖼️ Overview
+
+This project watches a folder for new receipt images (e.g., WhatsApp downloads), extracts transaction data using OCR, classifies the transaction type, and stores the results in a local SQLite3 database. The entire process is modular and scheduled using Apache Airflow.
+
+---
+
+## 🚀 Features
+
+- **Automated Folder Watching:** Detects new receipt images in a specified folder.
+- **OCR Extraction:** Uses [OCR.Space API](https://ocr.space/) for accurate text extraction.
+- **Transaction Classification:** Automatically distinguishes between Instapay and Vodafone Cash receipts.
+- **Structured Data Storage:** Saves parsed data into a SQLite3 database.
+- **Airflow Orchestration:** Modular, scheduled, and visualized pipeline management.
+- **Duplicate Prevention:** Tracks processed images to avoid reprocessing.
+- **Excel Export:** Easily export results for further analysis.
+
+---
+
+## ⚡ Quick Start
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/yourusername/payparser_pipeline.git
+   cd payparser_pipeline
+   ```
+
+2. **Set up environment variables:**
+   - Copy `.env.example` to `.env` and fill in your API keys and paths.
+
+3. **Install Python dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Start Airflow with Docker:**
+   ```bash
+   cd airflow
+   docker-compose up airflow-init
+   docker-compose up
+   ```
+
+5. **Access Airflow UI:**
+   - Visit [http://localhost:8080](http://localhost:8080) and trigger the `payparser_pipeline_dag`.
+
+---
+
+## ⚙️ Configuration
+
+Create a `.env` file in the root directory with the following variables:
+
+```env
+OCR_API_URL=...
+OCR_API_KEY=...
+DB_NAME=...
+WATCH_FOLDER=...
+SAVEING_PATH=...
+AIRFLOW_PROJ_DIR=...
+```
+
+See `.env.example` for a template.
+
+---
+
+## 📁 Folder Structure
+
+```
+payparser_pipeline/
+├── airflow/           # Airflow orchestration (DAGs, Docker config)
+│   ├── dags/
+│   │   └── payparser_dag.py
+│   └── docker-compose.yaml
+├── app/               # Core Python logic (OCR, parsing, DB)
+│   ├── ocr.py
+│   ├── parser.py
+│   ├── db.py
+│   ├── utils.py
+│   └── ...
+├── shared/            # Shared data (images, processed logs)
+│   ├── downloads/
+│   ├── processed_images.txt
+│   └── tmp_result.json
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## 🛠️ Usage Example
+
+- Place your receipt images in the `shared/downloads/` folder.
+- The pipeline will automatically process new images, extract transaction data, and store it in the SQLite database.
+- Export results to Excel using the provided tool in `app/save.py`.
 
 ---
 
 ## 🧱 Tech Stack
 
-- 🐍 **Python** (Data parsing, OCR, SQLite3)
-- 💬 **Node.js** with [Venom-Bot](https://github.com/orkestral/venom) (WhatsApp automation)
-- 🗄 **SQLite3** (Local storage)
-- 🔐 **dotenv** for managing private configs
+- **Python 3.12+**
+- **Apache Airflow** (via Docker)
+- **OCR.Space API**
+- **SQLite3**
+- **dotenv**
+- *(Optional)* Node.js with Venom-Bot (for WhatsApp automation)
 
 ---
 
-## 🗂 Project Structure
+## 🐞 Troubleshooting
 
-```
-payparser_pipeline/
-│
-├── app/
-│   ├── config.py        # Load environment variables
-│   ├── db.py            # Database connection
-│   ├── main.py          # Entry point for parser
-│   ├── ocr.py           # OCR processing logic
-│   ├── parser.py        # Text analysis & parsing
-│   ├── save.py          # Save logic to DB/Excel
-│   ├── utils.py         # Helper functions
-│   └── watcher.py       # Watch folder for new images
-│
-├── whatsapp-bot/
-│   └── index.js         # WhatsApp automation using venom-bot
-│
-├── .env                 # Environment variables
-├── .gitignore           # Files to ignore
-└── README.md            # You are here!
-```
-
----
-
-## ⚙️ Setup Instructions
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/zain3125/Transaction-Management-System.git
-cd Transaction-Management-System
-```
-
-### 2. Install Python Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Install Node.js Dependencies
-
-```bash
-cd whatsapp-bot
-npm install
-```
-
-### 4. Configure Environment Variables
-
-Create a `.env` file in the root folder:
-
-```env
-OCR_API_URL=https://api.ocr.space/parse/image
-OCR_API_KEY=your_ocr_api_key
-
-DB_NAME=./data_bases/system_data.db
-WATCH_FOLDER=./whatsapp-bot/downloads
-SAVEING_PATH=./Excell_sheets
-```
-
-### 5. Start the Application
-
-```bash
-# Run the WhatsApp bot (Node.js)
-node whatsapp-bot/index.js
-
-# Run the watcher/parser (Python)
-python app/main.py
-```
-
----
-
-## 🚫 .gitignore (Already included)
-
-- Database files (`*.db`)
-- Excel/CSV files
-- Node modules (`node_modules/`)
-- Token & cache folders
-- JSON files
+- **Airflow webserver not starting?**  
+  Ensure ports 8080 and 5432 are free and Docker is running.
+- **OCR API errors?**  
+  Check your API key and usage limits at [OCR.Space](https://ocr.space/ocrapi).
+- **Database issues?**  
+  Verify the path in your `.env` file and permissions.
 
 ---
 
 ## 📄 License
 
-This project is for educational and personal use. If you plan to use it commercially, please contact the owner.
+This project is for educational and personal use. For commercial usage, please contact the maintainer.
 
 ---
 
 ## 🤝 Contributions
 
-Pull requests are welcome! Feel free to fork and suggest improvements.
+Contributions are welcome! Please open issues or submit pull requests for improvements or bug fixes. Your input is valuable to enhance the project.
