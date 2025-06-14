@@ -1,11 +1,9 @@
 import os
 import sqlite3
 import pandas as pd
-import tkinter as tk
-from tkinter import ttk
-from tkinter import messagebox
-from config import DB_NAME
-from config import SAVEING_PATH
+from tkinter import ttk, messagebox, tk
+from config import DB_NAME, SAVEING_PATH
+
 def export_to_excel():
     try:
         conn = sqlite3.connect(DB_NAME)
