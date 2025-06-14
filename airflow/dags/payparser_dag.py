@@ -29,7 +29,7 @@ with DAG(
     dag_id='payparser_pipeline_dag',
     default_args=default_args,
     start_date=datetime(2024, 1, 1),
-    schedule_interval='0 1 * * *',
+    schedule_interval='*/6 * * * *',
     catchup=False,
 ) as dag:
 
@@ -99,9 +99,6 @@ with DAG(
                     else:
                         cash_data.append(tx_data)
                     
-                    with open(PROCESSED_FILE, 'a') as f:
-                        f.write(os.path.basename(image_path) + '\n')
-
                 except Exception as e:
                     print(f"Error during OCR/classification: {e}")
 
@@ -114,6 +111,62 @@ with DAG(
         task_id='ocr_and_classify_task',
         python_callable=ocr_and_classify
     )
+
+    def rename_images_by_transaction_id(ti):
+        print("Starting rename task...")
+
+        if not os.path.exists(TMP_RESULT_FILE):
+            print("TMP_RESULT_FILE not found:", TMP_RESULT_FILE)
+            return
+
+        with open(TMP_RESULT_FILE, 'r') as f:
+            data = json.load(f)
+
+        if not data:
+            print("No data found in TMP_RESULT_FILE.")
+            return
+
+        print(f"Found {len(data.get('instapay', []))} instapay & {len(data.get('cash', []))} cash transactions")
+
+        for tx_type in ['instapay', 'cash']:
+            for tx in data.get(tx_type, []):
+                print(f"Processing: {tx}")
+                txid = tx.get("transaction_id")
+                fname = tx.get("filename")
+
+                if not txid or not fname:
+                    print(f"Skipping: missing txid or filename: {tx}")
+                    continue
+
+                found = False
+                for root, dirs, files in os.walk(WATCH_FOLDER):
+                    if fname in files:
+                        src = os.path.join(root, fname)
+                        ext = os.path.splitext(fname)[1]
+                        dst = os.path.join(root, f"{txid}{ext}")
+                        found = True
+
+                        print(f"Rename {src} -> {dst}")
+
+                        try:
+                            os.rename(src, dst)
+                            print(f"Renamed: {fname} -> {txid}{ext}")
+
+                            with open(PROCESSED_FILE, 'a') as f:
+                                f.write(os.path.basename(dst) + '\n')
+
+                        except Exception as e:
+                            print(f"Error renaming file: {e}")
+                        break
+
+                if not found:
+                    print(f"Source file not found: {fname}")
+
+    rename_task = PythonOperator(
+        task_id='rename_images_task',
+        python_callable=rename_images_by_transaction_id
+    )
+
 
     def process_instapay(ti):
         classified = ti.xcom_pull(task_ids='ocr_and_classify_task', key='classified')
@@ -130,8 +183,6 @@ with DAG(
                 print(f"Instapay transaction inserted: {tx}")
             except Exception as e:
                 print(f"Failed to insert instapay transaction: {e}")
-
-
 
     instapay_task = PythonOperator(
         task_id='instapay_processing_task',
@@ -154,10 +205,9 @@ with DAG(
             except Exception as e:
                 print(f"Failed to insert cash transaction: {e}")
 
-
     cash_task = PythonOperator(
         task_id='cash_processing_task',
         python_callable=process_cash
         )
 
-    detect_task >> classify_task >> [instapay_task, cash_task]
+    detect_task >> classify_task >> rename_task >> [instapay_task, cash_task]
