@@ -50,7 +50,7 @@ x-airflow-common:
   # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
   # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
   image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.10.5}
-  env_file:
+  env_file: # This file is used to set environment variables for the Airflow containers
     - ../.env
   # build: .
   environment:
@@ -61,7 +61,7 @@ x-airflow-common:
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__FERNET_KEY: ''
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
-    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false' # Do not load example DAGs by default
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
     # yamllint disable rule:line-length
     # Use simple http server on scheduler for health checks
@@ -75,15 +75,16 @@ x-airflow-common:
     # If you want to use it, outcomment it and replace airflow.cfg with the name of your config file
     # AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
     
-    # can show the config in the webserver UI --zain
+    # can show the config in the webserver UI
     AIRFLOW__WEBSERVER__EXPOSE_CONFIG: 'True' 
-    # change the default timezone to Cairo --zian
+    # change the default timezone to Cairo
     AIRFLOW__CORE__DEFAULT_TIMEZONE: 'Africa/Cairo' 
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
+    # The following volumes are used to share data between the Airflow containers and the host machine
     - ${AIRFLOW_PROJ_DIR:-.}/shared:/opt/airflow/shared
     - ${AIRFLOW_PROJ_DIR:-.}/app:/opt/airflow/app
     - ${AIRFLOW_PROJ_DIR:-.}/data_bases:/opt/airflow/data_bases
