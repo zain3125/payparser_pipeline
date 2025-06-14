@@ -29,7 +29,7 @@ with DAG(
     dag_id='payparser_pipeline_dag',
     default_args=default_args,
     start_date=datetime(2024, 1, 1),
-    schedule_interval='*/6 * * * *',
+    schedule_interval='0 1 * * *',
     catchup=False,
 ) as dag:
 
