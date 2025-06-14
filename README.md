@@ -1,6 +1,6 @@
 # 💸 Transaction Parser & OCR Pipeline
 
-A robust, automated pipeline for extracting and organizing transaction data from financial receipts using OCR, with orchestration by Apache Airflow.
+A robust, automated pipeline for extracting and organizing transaction data from financial receipts using OCR, orchestrated by Apache Airflow.
 
 ---
 
@@ -11,13 +11,13 @@ A robust, automated pipeline for extracting and organizing transaction data from
 
 ## 🖼️ Overview
 
-This project watches a folder for new receipt images (e.g., WhatsApp downloads), extracts transaction data using OCR, classifies the transaction type, and stores the results in a local SQLite3 database. The entire process is modular and scheduled using Apache Airflow.
+This project monitors a folder for new receipt images (e.g., WhatsApp downloads), extracts transaction data using OCR, classifies the transaction type (Instapay or Vodafone Cash), and stores the results in a local SQLite3 database. The entire process is modular and scheduled using Apache Airflow.
 
 ---
 
 ## 🚀 Features
 
-- **Automated Folder Watching:** Detects new receipt images in a specified folder.
+- **Automated Folder Monitoring:** Detects new receipt images in a specified folder.
 - **OCR Extraction:** Uses [OCR.Space API](https://ocr.space/) for accurate text extraction.
 - **Transaction Classification:** Automatically distinguishes between Instapay and Vodafone Cash receipts.
 - **Structured Data Storage:** Saves parsed data into a SQLite3 database.
@@ -47,7 +47,7 @@ This project watches a folder for new receipt images (e.g., WhatsApp downloads),
    ```bash
    cd airflow
    docker-compose up airflow-init
-   docker-compose up
+   docker-compose up -d
    ```
 
 5. **Access Airflow UI:**
@@ -66,6 +66,7 @@ DB_NAME=...
 WATCH_FOLDER=...
 SAVEING_PATH=...
 AIRFLOW_PROJ_DIR=...
+AIRFLOW_UID=50000
 ```
 
 See `.env.example` for a template.
@@ -89,18 +90,21 @@ payparser_pipeline/
 ├── shared/            # Shared data (images, processed logs)
 │   ├── downloads/
 │   ├── processed_images.txt
-│   └── tmp_result.json
+│   └── tmp/
+│       └── classified_results.json
 ├── requirements.txt
 └── README.md
 ```
 
 ---
 
-## 🛠️ Usage Example
+## 🛠️ Pipeline Logic
 
-- Place your receipt images in the `shared/downloads/` folder.
-- The pipeline will automatically process new images, extract transaction data, and store it in the SQLite database.
-- Export results to Excel using the provided tool in `app/save.py`.
+- **Detection:** The DAG detects new images in the `downloads` folder that have not been processed before.
+- **OCR & Classification:** Each new image is processed using OCR. The extracted text is classified as either Instapay or Vodafone Cash, and relevant transaction details are parsed.
+- **Database Insertion:** Parsed transaction data is inserted into the SQLite database.
+- **Duplicate Handling:** Processed images are tracked in `processed_images.txt` to prevent reprocessing.
+- **Results:** All classified results are saved in `shared/tmp/classified_results.json`.
 
 ---
 
@@ -111,7 +115,7 @@ payparser_pipeline/
 - **OCR.Space API**
 - **SQLite3**
 - **dotenv**
-- *(Optional)* Node.js with Venom-Bot (for WhatsApp automation)
+- **pandas** (for Excel export)
 
 ---
 
@@ -134,4 +138,4 @@ This project is for educational and personal use. For commercial usage, please c
 
 ## 🤝 Contributions
 
-Contributions are welcome! Please open issues or submit pull requests for improvements or bug fixes. Your input is valuable to enhance the project.
+Contributions are welcome! Please open issues or submit pull requests for improvements or bug fixes.
