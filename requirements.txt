@@ -1,6 +1,5 @@
 # Core dependencies
 python-dotenv
-watchdog
 requests
 pandas
 openpyxl
@@ -11,6 +10,3 @@ sqlite-utils
 
 # Airflow core (pin to a stable version)
 apache-airflow==2.9.1
-
-# Optional: If you use OCR.Space via requests
-certifi
