@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from dateutil import parser
 
 def extract_receiver_name_from_filename(filename):
     match = re.search(r'\((.*?)\)', filename)
@@ -7,15 +7,14 @@ def extract_receiver_name_from_filename(filename):
 
 def format_date_for_sqlite(date_str):
     try:
-        if "AM" in date_str or "PM" in date_str:
-            dt = datetime.strptime(date_str, "%d %B %Y %I:%M %p")
-        else:
-            dt = datetime.strptime(date_str, "%d %B %Y %H:%M")
+        if not date_str or not isinstance(date_str, str):
+            raise ValueError("Invalid date string")
+
+        dt = parser.parse(date_str)
         return dt.strftime("%Y-%m-%d %H:%M")
     except Exception as e:
-        print("Date formatting error:", e)
-        return date_str
-
+        print(f"Date formatting error: {e} | Rejected date string: '{date_str}'")
+        return None
 
 def extract_egyptian_phone_number(text):
     match = re.search(r"\b(010|011|012|015)\d{8}\b", text)
@@ -38,13 +37,19 @@ def convert_arabic_month_to_english(month_ar):
 def extract_date(text, pattern, is_arabic=False):
     match = re.search(pattern, text)
     if not match:
+        print("Date not matched in text, returning full text:")
+        print("Rejected date string:", repr(text))
         return None
+
     if is_arabic:
         day, month_ar, time, year = match.groups()
+        day = day.replace('.', '')  # For Ones days OCR convert "٠ ١ May" to ". 1 May"
         month = convert_arabic_month_to_english(month_ar)
     else:
         day, month, year, time = match.groups()
+
     return f"{day} {month} {year} {time}"
+
 
 def extract_amount(text, pattern):
     match = re.search(pattern, text)
