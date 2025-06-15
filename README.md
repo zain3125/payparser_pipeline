@@ -1,75 +1,71 @@
-# 💸 Transaction Parser & OCR Pipeline
+# 💸 PayParser Pipeline
 
-A robust, automated pipeline for extracting and organizing transaction data from financial receipts using OCR, orchestrated by Apache Airflow.
+A complete end-to-end pipeline for extracting, classifying, and storing transaction data from WhatsApp receipt images using OCR, with orchestration via Apache Airflow and WhatsApp integration via a Node.js bot.
 
 ---
 
-[![Python](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
-[![Airflow](https://img.shields.io/badge/airflow-2.x-blue.svg)](https://airflow.apache.org/)
+## 📚 Table of Contents
+
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Features](#features)
+- [Folder Structure](#folder-structure)
+- [Setup & Installation](#setup--installation)
+- [Configuration](#configuration)
+- [How It Works](#how-it-works)
+- [WhatsApp Bot Details](#whatsapp-bot-details)
+- [Airflow DAG Logic](#airflow-dag-logic)
+- [App Module Details](#app-module-details)
+- [Exporting Data](#exporting-data)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
 ## 🖼️ Overview
 
-This project monitors a folder for new receipt images (e.g., WhatsApp downloads), extracts transaction data using OCR, classifies the transaction type (Instapay or Vodafone Cash), and stores the results in a local SQLite3 database. The entire process is modular and scheduled using Apache Airflow.
+PayParser Pipeline automates the extraction and organization of transaction data from images of receipts (e.g., sent via WhatsApp). It uses a WhatsApp bot to collect images, OCR to extract text, Python logic to parse and classify transactions, and Airflow to orchestrate the workflow and store results in a SQLite database.
+
+---
+
+## 🏗️ Architecture
+
+```
+WhatsApp Group
+    │
+    ▼
+[whatsapp-bot (Node.js)]
+    │
+    ▼
+airflow/shared/downloads/ (images)
+    │
+    ▼
+[Airflow DAG]
+    │
+    ├─ OCR & Classification
+    ├─ Image Renaming by Transaction ID
+    └─ Database Insertion (SQLite)
+    │
+    ▼
+airflow/shared/tmp/classified_results.json
+    │
+    ▼
+[Export to Excel (GUI)]
+```
 
 ---
 
 ## 🚀 Features
 
-- **Automated Folder Monitoring:** Detects new receipt images in a specified folder.
-- **OCR Extraction:** Uses [OCR.Space API](https://ocr.space/) for accurate text extraction.
-- **Transaction Classification:** Automatically distinguishes between Instapay and Vodafone Cash receipts.
+- **WhatsApp Integration:** Downloads images from a specified WhatsApp group, organizes them by sender.
+- **Automated Folder Monitoring:** Detects new images for processing.
+- **OCR Extraction:** Uses [OCR.Space API](https://ocr.space/) for text extraction.
+- **Transaction Classification:** Distinguishes between Instapay and Vodafone Cash receipts.
+- **Image Renaming:** Renames images by transaction ID for traceability.
 - **Structured Data Storage:** Saves parsed data into a SQLite3 database.
 - **Airflow Orchestration:** Modular, scheduled, and visualized pipeline management.
-- **Duplicate Prevention:** Tracks processed images to avoid reprocessing.
-- **Excel Export:** Easily export results for further analysis.
-
----
-
-## ⚡ Quick Start
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/yourusername/payparser_pipeline.git
-   cd payparser_pipeline
-   ```
-
-2. **Set up environment variables:**
-   - Copy `.env.example` to `.env` and fill in your API keys and paths.
-
-3. **Install Python dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Start Airflow with Docker:**
-   ```bash
-   cd airflow
-   docker-compose up airflow-init
-   docker-compose up -d
-   ```
-
-5. **Access Airflow UI:**
-   - Visit [http://localhost:8080](http://localhost:8080) and trigger the `payparser_pipeline_dag`.
-
----
-
-## ⚙️ Configuration
-
-Create a `.env` file in the root directory with the following variables:
-
-```env
-OCR_API_URL=...
-OCR_API_KEY=...
-DB_NAME=...
-WATCH_FOLDER=...
-SAVEING_PATH=...
-AIRFLOW_PROJ_DIR=...
-AIRFLOW_UID=50000
-```
-
-See `.env.example` for a template.
+- **Excel Export:** Export all transactions to Excel via a simple GUI.
 
 ---
 
@@ -77,45 +73,148 @@ See `.env.example` for a template.
 
 ```
 payparser_pipeline/
-├── airflow/           # Airflow orchestration (DAGs, Docker config)
+├── airflow/
 │   ├── dags/
 │   │   └── payparser_dag.py
 │   └── docker-compose.yaml
-├── app/               # Core Python logic (OCR, parsing, DB)
+├── app/
+│   ├── config.py
+│   ├── db.py
 │   ├── ocr.py
 │   ├── parser.py
-│   ├── db.py
+│   ├── save.py
 │   ├── utils.py
-│   └── ...
-├── shared/            # Shared data (images, processed logs)
+├── shared/
 │   ├── downloads/
 │   ├── processed_images.txt
 │   └── tmp/
 │       └── classified_results.json
+├── whatsapp-bot/
+│   ├── index.js
+│   └── package.json
 ├── requirements.txt
+├── .env
 └── README.md
 ```
 
 ---
 
-## 🛠️ Pipeline Logic
+## ⚡ Setup & Installation
 
-- **Detection:** The DAG detects new images in the `downloads` folder that have not been processed before.
-- **OCR & Classification:** Each new image is processed using OCR. The extracted text is classified as either Instapay or Vodafone Cash, and relevant transaction details are parsed.
-- **Database Insertion:** Parsed transaction data is inserted into the SQLite database.
-- **Duplicate Handling:** Processed images are tracked in `processed_images.txt` to prevent reprocessing.
-- **Results:** All classified results are saved in `shared/tmp/classified_results.json`.
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/yourusername/payparser_pipeline.git
+cd payparser_pipeline
+```
+
+### 2. Python dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Node.js dependencies for WhatsApp bot
+
+```bash
+cd whatsapp-bot
+npm install
+cd ..
+```
+
+### 4. Airflow setup (Docker)
+
+```bash
+cd airflow
+docker-compose up airflow-init
+docker-compose up -d
+```
+
+### 5. Environment variables
+
+Create a `.env` file in the project root with:
+
+```env
+OCR_API_URL=https://api.ocr.space/parse/image
+OCR_API_KEY=YOUR_OCR_API_KEY
+DB_NAME=data_bases/system_data.db
+WATCH_FOLDER=whatsapp-bot/downloads
+SAVEING_PATH=Excell_sheets
+AIRFLOW_PROJ_DIR=E:/python projects/payparser_pipeline
+AIRFLOW_UID=50000
+```
 
 ---
 
-## 🧱 Tech Stack
+## ⚙️ Configuration
 
-- **Python 3.12+**
-- **Apache Airflow** (via Docker)
-- **OCR.Space API**
-- **SQLite3**
-- **dotenv**
-- **pandas** (for Excel export)
+- **Airflow Variables:**  
+  Set via Airflow UI or API:
+  - `group_name`: WhatsApp group name to monitor.
+  - `author_names`: JSON mapping WhatsApp IDs to readable names.
+
+- **OCR API:**  
+  Get your API key from [OCR.Space](https://ocr.space/ocrapi).
+
+---
+
+## 🔄 How It Works
+
+1. **Image Collection:**  
+   The WhatsApp bot downloads images from the specified group and saves them in `shared/downloads/<author_name>/`.
+
+2. **Airflow DAG:**  
+   - Detects new images not yet processed.
+   - Runs OCR and classifies each image as Instapay or Cash.
+   - Renames images by transaction ID.
+   - Parses transaction details and inserts them into the SQLite database.
+
+3. **Export:**  
+   Use the GUI (`app/save.py`) to export all transactions to Excel.
+
+---
+
+## 🤖 WhatsApp Bot Details
+
+- **Location:** [`whatsapp-bot/index.js`](whatsapp-bot/index.js)
+- **Tech:** [venom-bot](https://github.com/orkestral/venom)
+- **How it works:**
+  - Connects to WhatsApp Web via QR code.
+  - Downloads images from the configured group.
+  - Organizes images by sender.
+  - Reads group and author info from Airflow variables via REST API.
+
+---
+
+## 🌀 Airflow DAG Logic
+
+- **File:** [`airflow/dags/payparser_dag.py`](airflow/dags/payparser_dag.py)
+- **Main Tasks:**
+  1. **detect_new_images:** Finds new images in `shared/downloads/`.
+  2. **ocr_and_classify:** Runs OCR and classifies images.
+  3. **rename_images_task:** Renames images by transaction ID.
+  4. **instapay_processing_task / cash_processing_task:** Parses and inserts transaction data into the database.
+
+---
+
+## 🐍 App Module Details
+
+- **OCR:** [`app/ocr.py`](app/ocr.py) — Calls OCR.Space API.
+- **Parsing:** [`app/parser.py`](app/parser.py) — Extracts transaction details.
+- **Database:** [`app/db.py`](app/db.py) — Inserts transactions into SQLite.
+- **Utilities:** [`app/utils.py`](app/utils.py) — Helper functions for parsing.
+- **Export:** [`app/save.py`](app/save.py) — GUI for exporting data to Excel.
+
+---
+
+## 📤 Exporting Data
+
+To export all transactions to Excel:
+
+```bash
+python app/save.py
+```
+A simple GUI will appear. Click "Export to Excel Sheet" and the file will be saved in the path specified by `SAVEING_PATH`.
 
 ---
 
@@ -123,19 +222,26 @@ payparser_pipeline/
 
 - **Airflow webserver not starting?**  
   Ensure ports 8080 and 5432 are free and Docker is running.
+
+- **WhatsApp bot not downloading images?**  
+  - Make sure Airflow is running and variables are set.
+  - Scan the QR code on first run.
+  - Check folder permissions.
+
 - **OCR API errors?**  
   Check your API key and usage limits at [OCR.Space](https://ocr.space/ocrapi).
+
 - **Database issues?**  
   Verify the path in your `.env` file and permissions.
 
 ---
 
-## 📄 License
+## 🤝 Contributing
 
-This project is for educational and personal use. For commercial usage, please contact the maintainer.
+Contributions are welcome! Please open issues or submit pull requests for improvements or bug fixes.
 
 ---
 
-## 🤝 Contributions
+## 📄 License
 
-Contributions are welcome! Please open issues or submit pull requests for improvements or bug fixes.
+This project is for educational and personal use. For commercial usage, please
