@@ -12,7 +12,7 @@ sys.path.append('/opt/airflow/app')
 from ocr import extract_text_from_image
 from parser import parse_transaction_details_instapay, parse_transaction_details_cash
 from db import insert_transaction
-from utils import extract_receiver_name_from_filename
+from utils import extract_receiver_name_from_filename, extract_transaction_id
 
 WATCH_FOLDER = '/opt/airflow/shared/downloads'
 TMP_FOLDER = '/opt/airflow/shared/tmp'
@@ -62,50 +62,36 @@ with DAG(
     )
 
     def ocr_and_classify(ti):
-            os.makedirs(TMP_FOLDER, exist_ok=True)
-            new_images = ti.xcom_pull(task_ids='detect_new_images_task', key='new_images')
+        os.makedirs(TMP_FOLDER, exist_ok=True)
+        new_images = ti.xcom_pull(task_ids='detect_new_images_task', key='new_images')
 
-            instapay_data = []
-            cash_data = []
+        instapay_data = []
+        cash_data = []
 
-            for image_path in new_images:
-                try:
-                    print(f"OCR processing: {image_path}")
-                    text = extract_text_from_image(image_path)
+        for image_path in new_images:
+            try:
+                print(f"OCR processing: {image_path}")
+                text = extract_text_from_image(image_path)
 
-                    if "EGP" in text:
-                        result = parse_transaction_details_instapay(text)
-                        tx_type = "instapay"
-                    else:
-                        result = parse_transaction_details_cash(text, image_path)
-                        tx_type = "cash"
+                tx_type = "instapay" if "EGP" in text else "cash"
 
-                    amount, sender, phone_number, date, transaction_id, status = result
-                    receiver_name = extract_receiver_name_from_filename(os.path.basename(image_path))
+                tx_data = {
+                    "text": text,
+                    "filename": image_path
+                }
 
-                    tx_data = {
-                        "amount": amount,
-                        "sender": sender,
-                        "receiver_name": receiver_name,
-                        "phone_number": phone_number,
-                        "date": date,
-                        "transaction_id": transaction_id,
-                        "status": status,
-                        "filename": os.path.basename(image_path)
-                    }
+                if tx_type == "instapay":
+                    instapay_data.append(tx_data)
+                else:
+                    cash_data.append(tx_data)
 
-                    if tx_type == "instapay":
-                        instapay_data.append(tx_data)
-                    else:
-                        cash_data.append(tx_data)
-                    
-                except Exception as e:
-                    print(f"Error during OCR/classification: {e}")
+            except Exception as e:
+                print(f"Error during OCR/classification: {e}")
 
-            with open(TMP_RESULT_FILE, 'w') as f:
-                json.dump({"instapay": instapay_data, "cash": cash_data}, f)
-            
-            ti.xcom_push(key='classified', value={"instapay": instapay_data, "cash": cash_data})
+        with open(TMP_RESULT_FILE, 'w') as f:
+            json.dump({"instapay": instapay_data, "cash": cash_data}, f)
+
+        ti.xcom_push(key='classified', value={"instapay": instapay_data, "cash": cash_data})
 
     classify_task = PythonOperator(
         task_id='ocr_and_classify_task',
@@ -131,8 +117,17 @@ with DAG(
         for tx_type in ['instapay', 'cash']:
             for tx in data.get(tx_type, []):
                 print(f"Processing: {tx}")
-                txid = tx.get("transaction_id")
+                text = tx.get("text", "")
                 fname = tx.get("filename")
+
+                if tx_type == "cash":
+                    try:
+                        _, _, _, _, txid, _ = parse_transaction_details_cash(text, fname)
+                    except Exception as e:
+                        print(f"Error extracting txid from cash: {e}")
+                        txid = None
+                else:
+                    txid, _ = extract_transaction_id(text)
 
                 if not txid or not fname:
                     print(f"Skipping: missing txid or filename: {tx}")
@@ -167,47 +162,51 @@ with DAG(
         python_callable=rename_images_by_transaction_id
     )
 
-
-    def process_instapay(ti):
+    def process_transactions(ti, tx_type, parser_function):
         classified = ti.xcom_pull(task_ids='ocr_and_classify_task', key='classified')
         if not classified:
-            print("No classified data found for instapay.")
+            print(f"No classified data found for {tx_type}.")
             return
 
-        instapay_images = classified.get('instapay', [])
+        transactions = classified.get(tx_type, [])
 
-        for tx in instapay_images:
+        for tx in transactions:
             try:
-                tx.pop('filename', None)
-                insert_transaction(**tx)
-                print(f"Instapay transaction inserted: {tx}")
+                text = tx.get("text", "")
+                filename = tx.get("filename", "")
+
+                if tx_type == "instapay":
+                    amount, sender, phone_number, date, transaction_id, status = parser_function(text)
+                    receiver_name = extract_receiver_name_from_filename(filename)
+                else:
+                    amount, sender, phone_number, date, transaction_id, status = parser_function(text, filename)
+                    receiver_name = extract_receiver_name_from_filename(filename)
+
+                tx_data = {
+                    "amount": amount,
+                    "sender": sender,
+                    "receiver_name": receiver_name,
+                    "phone_number": phone_number,
+                    "date": date,
+                    "transaction_id": transaction_id,
+                    "status": status
+                }
+
+                insert_transaction(**tx_data)
+                print(f"{tx_type.capitalize()} transaction inserted: {tx_data}")
+
             except Exception as e:
-                print(f"Failed to insert instapay transaction: {e}")
+                print(f"Failed to insert {tx_type} transaction: {e}")
+
 
     instapay_task = PythonOperator(
         task_id='instapay_processing_task',
-        python_callable=process_instapay
+        python_callable=lambda ti: process_transactions(ti, 'instapay', parse_transaction_details_instapay)
     )
-
-    def process_cash(ti):
-        classified = ti.xcom_pull(task_ids='ocr_and_classify_task', key='classified')
-        if not classified:
-            print("No classified data found for cash.")
-            return
-
-        cash_images = classified.get('cash', [])
-
-        for tx in cash_images:
-            try:
-                tx.pop('filename', None)
-                insert_transaction(**tx)
-                print(f"Cash transaction inserted: {tx}")
-            except Exception as e:
-                print(f"Failed to insert cash transaction: {e}")
 
     cash_task = PythonOperator(
         task_id='cash_processing_task',
-        python_callable=process_cash
-        )
+        python_callable=lambda ti: process_transactions(ti, 'cash', parse_transaction_details_cash)
+    )
 
     detect_task >> classify_task >> rename_task >> [instapay_task, cash_task]
