@@ -37,6 +37,8 @@ function sanitizeFileName(text) {
 // Main function
 async function startBot() {
   const groupName = await getAirflowVariable('group_name');
+  // Print group name
+  console.log("Group Name:", groupName);
   const authorNamesRaw = await getAirflowVariable('author_names');
 
   let authorNames = {};
