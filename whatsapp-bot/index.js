@@ -1,12 +1,15 @@
+//import necessary libraries
 const venom = require('venom-bot');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 
+// Define constants for Airflow API
 const AIRFLOW_API_BASE = 'http://localhost:8080/api/v1/variables';
 const AIRFLOW_USERNAME = 'airflow';
 const AIRFLOW_PASSWORD = 'airflow';
 
+// Function to get Airflow variable
 async function getAirflowVariable(key) {
   try {
     const response = await axios.get(`${AIRFLOW_API_BASE}/${key}`, {
@@ -22,6 +25,7 @@ async function getAirflowVariable(key) {
   }
 }
 
+// Function to sanitize file names
 function sanitizeFileName(text) {
   return text
     .replace(/[^\u0600-\u06FF\w\s\-_()]/g, ' ')
@@ -30,6 +34,7 @@ function sanitizeFileName(text) {
     .trim();
 }
 
+// Main function
 async function startBot() {
   const groupName = await getAirflowVariable('group_name');
   const authorNamesRaw = await getAirflowVariable('author_names');
@@ -47,6 +52,7 @@ async function startBot() {
     .catch(err => console.log('Error creating venom session:', err));
 }
 
+// Start the bot
 function start(client, groupName, authorNames) {
   client.onMessage(async (message) => {
     const isFromGroup =
