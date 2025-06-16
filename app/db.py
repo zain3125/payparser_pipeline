@@ -1,5 +1,5 @@
 import sqlite3
-from config import DB_NAME
+from app.app_config import DB_NAME
 
 def insert_transaction(amount, sender, receiver_name, phone_number, date, transaction_id, status):
 

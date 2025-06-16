@@ -1,6 +1,6 @@
 import requests
 import json
-from config import OCR_API_URL, OCR_API_KEY
+from app.app_config import OCR_API_URL, OCR_API_KEY
 
 def extract_text_from_image(image_path):
     with open(image_path, 'rb') as image_file:

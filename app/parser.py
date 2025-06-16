@@ -1,6 +1,6 @@
 import os
 import re
-from utils import extract_egyptian_phone_number, extract_date, extract_amount, extract_transaction_id, format_date_for_sqlite
+from app.utils import extract_egyptian_phone_number, extract_date, extract_amount, extract_transaction_id, format_date_for_sqlite
 
 def parse_transaction_details_instapay(text):
     amount = extract_amount(text, r"([\d,]+)\s*EGP")
