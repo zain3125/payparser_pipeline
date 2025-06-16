@@ -2,7 +2,7 @@ import os
 import sqlite3
 import pandas as pd
 from tkinter import ttk, messagebox, tk
-from config import DB_NAME, SAVEING_PATH
+from app.app_config import DB_NAME, SAVEING_PATH
 
 def export_to_excel():
     try:
