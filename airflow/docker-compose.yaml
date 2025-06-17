@@ -90,6 +90,7 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/data_bases:/opt/airflow/data_bases
     - ../app:/opt/airflow/app
     - ../data_bases:/opt/airflow/data_bases
+    - ../Excell_sheets:/opt/airflow/Excell_sheets
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
