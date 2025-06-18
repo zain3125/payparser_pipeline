@@ -16,7 +16,11 @@ def ocr_and_classify(ti):
             print(f"OCR processing: {image_path}")
             # Save extracted text from image to text
             text = extract_text_from_image(image_path)
-
+            
+            if not text:
+                print("Warning: OCR returned None or empty text. Skipping.")
+                continue
+            
             # Classify transaction type
             tx_type = "instapay" if "EGP" in text else "cash"
 

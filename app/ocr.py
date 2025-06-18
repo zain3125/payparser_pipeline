@@ -16,12 +16,20 @@ def extract_text_from_image(image_path):
             }
         )
     try:
+        response.raise_for_status()
+        
         result = response.json()
         if isinstance(result, dict) and not result.get("IsErroredOnProcessing", True):
             return result["ParsedResults"][0]["ParsedText"]
         else:
-            print("Error: OCR processing failed.")
+            print(f"OCR error details: {result.get('ErrorMessage')}")
+            print("Error: OCR processing failed (API returned error).")
             return None
+
+    except requests.HTTPError as e:
+        print(f"HTTP Error: {e}")
+        return None
+
     except json.JSONDecodeError:
         print("Error: OCR JSON decode failed.")
         return None
