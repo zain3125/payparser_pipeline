@@ -74,27 +74,45 @@ airflow/shared/tmp/classified_results.json
 ```
 payparser_pipeline/
 ├── airflow/
+│   ├── config/
 │   ├── dags/
-│   │   └── payparser_dag.py
+│   │   ├── payparser_dag.py
+│   │   └── to_csv_dag.py
+│   ├── logs/
+│   ├── plugins/
 │   └── docker-compose.yaml
 ├── app/
-│   ├── config.py
+│   ├── airflow_config.py
+│   ├── classify.py
+│   ├── detect.py
+│   ├── process.py
+│   ├── rename.py
+│   ├── app_config.py
 │   ├── db.py
 │   ├── ocr.py
 │   ├── parser.py
 │   ├── save.py
 │   ├── utils.py
+│   └── tasks/
+│	    ├── airflow_config.py
+│   	├── classify.py
+│   	├── detect.py
+│   	├── process.py
+│		└── rename.py
 ├── shared/
 │   ├── downloads/
-│   ├── processed_images.txt
-│   └── tmp/
-│       └── classified_results.json
+│   ├── tmp/
+│   │   └── classified_results.json
+│   └── processed_images.txt
+├── data_bases/
+│   └── system_data.db
+├── Excell_sheets/
 ├── whatsapp-bot/
-│   ├── index.js
-│   └── package.json
-├── requirements.txt
+│   └── index.js
 ├── .env
-└── README.md
+├── .gitignore
+├── README.md
+└── requirements.txt
 ```
 
 ---
