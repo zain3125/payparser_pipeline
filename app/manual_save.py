@@ -52,7 +52,7 @@ def export_to_excel():
         df = pd.read_sql_query(query, conn, params=(start, end))
         conn.close()
 
-        file_name = "Transactions data.xlsx"
+        file_name = f"Transactions from {start} to {end}.xlsx"
         os.makedirs(SAVEING_PATH, exist_ok=True)
         file_path = os.path.join(SAVEING_PATH, file_name)
 
