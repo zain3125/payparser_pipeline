@@ -1,10 +1,13 @@
 import os
+import sys
 from dotenv import load_dotenv
 
 load_dotenv()
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OCR_API_URL = os.getenv("OCR_API_URL")
 OCR_API_KEY = os.getenv("OCR_API_KEY")
 
