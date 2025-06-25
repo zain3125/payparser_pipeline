@@ -49,7 +49,7 @@ async function startBot() {
   }
 
   venom
-    .create({ session: 'session-name' })
+    .create({ session: 'session-name', headless: 'new' }) //new laptop
     .then(client => start(client, groupName, authorNames))
     .catch(err => console.log('Error creating venom session:', err));
 }
