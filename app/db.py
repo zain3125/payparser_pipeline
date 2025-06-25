@@ -23,7 +23,7 @@ def insert_transaction(amount, sender, receiver_name, phone_number, date, transa
         cursor.execute("""
         INSERT INTO "transactions" (date, sender, receiver, phone_number, amount, transaction_id, status)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (date, sender, receiver_name, phone_number, amount, transaction_id, status))
+        """, (date, sender, receiver_name, phone_number, amount, transaction_id if transaction_id else None, status))
 
         conn.commit()
         print(f"Inserted transaction into table: transactions")
