@@ -6,7 +6,7 @@ from app.app_config import DB_NAME, SAVEING_PATH
 
 LAST_ID_FILE = os.path.join(SAVEING_PATH, 'last_id.txt')
 
-def export_to_csv():
+def export_to_excel():
     try:
         os.makedirs(SAVEING_PATH, exist_ok=True)
 
@@ -17,24 +17,21 @@ def export_to_csv():
             last_id = 0
 
         conn = sqlite3.connect(DB_NAME)
-
         query = f"SELECT * FROM transactions WHERE id > {last_id}"
         df = pd.read_sql_query(query, conn)
         conn.close()
 
         if df.empty:
-            print("No new records found.")
             return
 
-        file_name = f"Transactions data {datetime.now().strftime('%d %B %Y')}.csv"
+        file_name = f"Transactions data {datetime.now().strftime('%d %B %Y')}.xlsx"
         file_path = os.path.join(SAVEING_PATH, file_name)
 
-        df.to_csv(file_path, index=False)
-        print("Success", f"Data saved to {file_path}")
+        df.to_excel(file_path, index=False)
 
         new_last_id = df['id'].max()
         with open(LAST_ID_FILE, 'w') as f:
             f.write(str(new_last_id))
 
     except Exception as e:
-        print("Error", f"Failed to save:\n{e}")
+        print(f"Failed to save:\n{e}")
