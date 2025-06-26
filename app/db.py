@@ -10,7 +10,7 @@ def insert_transaction(amount, sender, receiver_name, phone_number, date, transa
         cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS transactions(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    date DATE,
+    date DATE DEFAULT (datetime('now', '+3 hours')),
     sender TEXT,
     receiver TEXT,
     phone_number TEXT,
@@ -20,10 +20,16 @@ def insert_transaction(amount, sender, receiver_name, phone_number, date, transa
         )
         """)
 
-        cursor.execute("""
-        INSERT INTO "transactions" (date, sender, receiver, phone_number, amount, transaction_id, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (date, sender, receiver_name, phone_number, amount, transaction_id if transaction_id else None, status))
+        if date:
+            cursor.execute("""
+            INSERT INTO "transactions" (date, sender, receiver, phone_number, amount, transaction_id, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (date, sender, receiver_name, phone_number, amount, transaction_id if transaction_id else None, status))
+        else:
+            cursor.execute("""
+            INSERT INTO "transactions" (sender, receiver, phone_number, amount, transaction_id, status)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """, (sender, receiver_name, phone_number, amount, transaction_id if transaction_id else None, status))
 
         conn.commit()
         print(f"Inserted transaction into table: transactions")

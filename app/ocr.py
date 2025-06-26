@@ -1,35 +1,33 @@
-import requests
-import json
+from azure.cognitiveservices.vision.computervision import ComputerVisionClient
+from msrest.authentication import CognitiveServicesCredentials
 from app.app_config import OCR_API_URL, OCR_API_KEY
+import time
+
+client = ComputerVisionClient(OCR_API_URL, CognitiveServicesCredentials(OCR_API_KEY))
 
 def extract_text_from_image(image_path):
-    with open(image_path, 'rb') as image_file:
-        response = requests.post(
-            OCR_API_URL,
-            files={"file": image_file},
-            data={
-                "apikey": OCR_API_KEY,
-                "language": "auto",
-                "scale": "true",
-                "OCREngine": "2",
-                "isOverlayRequired": "false"
-            }
-        )
     try:
-        response.raise_for_status()
-        
-        result = response.json()
-        if isinstance(result, dict) and not result.get("IsErroredOnProcessing", True):
-            return result["ParsedResults"][0]["ParsedText"]
+        with open(image_path, "rb") as image_file:
+            response = client.read_in_stream(image_file, raw=True)
+
+        operation_location = response.headers["Operation-Location"]
+        operation_id = operation_location.split("/")[-1]
+
+        while True:
+            result = client.get_read_result(operation_id)
+            if result.status.lower() not in ['notstarted', 'running']:
+                break
+            time.sleep(1)
+
+        if result.status == 'succeeded':
+            text = "\n".join(
+                [line.text for read_result in result.analyze_result.read_results for line in read_result.lines]
+            )
+            return text
         else:
-            print(f"OCR error details: {result.get('ErrorMessage')}")
-            print("Error: OCR processing failed (API returned error).")
+            print("OCR failed: Azure did not succeed")
             return None
 
-    except requests.HTTPError as e:
-        print(f"HTTP Error: {e}")
-        return None
-
-    except json.JSONDecodeError:
-        print("Error: OCR JSON decode failed.")
+    except Exception as e:
+        print(f"Azure OCR error: {e}")
         return None
