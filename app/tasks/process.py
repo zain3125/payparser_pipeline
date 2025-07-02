@@ -8,18 +8,16 @@ def process_transactions(ti, tx_type, parser_function):
         return
 
     transactions = classified.get(tx_type, [])
-
     for tx in transactions:
         try:
             text = tx.get("text", "")
             filename = tx.get("filename", "")
+            receiver_name = extract_receiver_name_from_filename(filename)
 
             if tx_type == "instapay":
                 amount, sender, phone_number, date, transaction_id, status = parser_function(text)
-                receiver_name = extract_receiver_name_from_filename(filename)
-            else: # Cash
+            else:
                 amount, sender, phone_number, date, transaction_id, status = parser_function(text, filename)
-                receiver_name = extract_receiver_name_from_filename(filename)
 
             tx_data = {
                 "amount": amount,

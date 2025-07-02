@@ -17,7 +17,23 @@ def export_to_excel():
             last_id = 0
 
         conn = sqlite3.connect(DB_NAME)
-        query = f"SELECT * FROM transactions WHERE id > {last_id}"
+        query = f"""
+        SELECT 
+        t.id AS transaction_id,
+        t.date,
+        s.username AS sender_username,
+        b.bank_name,
+        t.receiver,
+        t.phone_number,
+        t.amount,
+        t.transaction_id,
+        t.status
+    FROM transactions t
+    JOIN senders s ON t.sender = s.id
+    LEFT JOIN bank_name b ON s.id = b.id
+    ORDER BY t.date DESC
+    WHERE t.id > {last_id}
+        """
         df = pd.read_sql_query(query, conn)
         conn.close()
 
