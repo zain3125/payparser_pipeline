@@ -45,8 +45,21 @@ def export_to_excel():
         conn = sqlite3.connect(DB_NAME)
 
         query = """
-        SELECT * FROM transactions
-        WHERE date BETWEEN ? AND ?
+        SELECT 
+            t.id AS transaction_id,
+            t.date,
+            s.username AS sender_username,
+            b.bank_name,
+            t.receiver,
+            t.phone_number,
+            t.amount,
+            t.transaction_id,
+            t.status
+        FROM transactions t
+        JOIN senders s ON t.sender = s.id
+        LEFT JOIN bank_name b ON s.id = b.id
+        WHERE t.date BETWEEN ? AND ?
+        ORDER BY t.date DESC;
         """
 
         df = pd.read_sql_query(query, conn, params=(start, end))
@@ -57,9 +70,9 @@ def export_to_excel():
         file_path = os.path.join(SAVEING_PATH, file_name)
 
         df.to_excel(file_path, index=False)
-        messagebox.showinfo("Saved", f"Successfully saved in;:\n{file_path}")
+        messagebox.showinfo("Saved", f"Successfully saved in:\n{file_path}")
     except Exception as e:
-        messagebox.showerror("Error", f"Failed to save :\n{e}")
+        messagebox.showerror("Error", f"Failed to save:\n{e}")
 
 # GUI setup
 root = tk.Tk()
