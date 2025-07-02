@@ -41,6 +41,7 @@ Thumbs.db
 # logs folder
 airflow/logs/
 airflow\logs\scheduler\2025-06-13
+Excell_sheets/last_id.txt
 
 # processed images
 airflow/shared/
