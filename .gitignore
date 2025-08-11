@@ -30,6 +30,8 @@ __pycache__/
 # Node.js modules and tokens
 node_modules/
 tokens/
+whatsapp-bot/.wwebjs_cache/
+whatsapp-bot/auth/
 
 # VSCode settings (optional, remove if needed)
 .vscode/

@@ -11,7 +11,6 @@ from app.tasks.classify import ocr_and_classify
 from app.tasks.rename import rename_images_by_transaction_id
 from app.tasks.process import process_transactions
 
-
 from app.parser import parse_transaction_details_instapay, parse_transaction_details_cash
 
 
