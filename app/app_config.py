@@ -11,14 +11,13 @@ else:
 OCR_API_URL = os.getenv("OCR_API_URL")
 OCR_API_KEY = os.getenv("OCR_API_KEY")
 
-DB_NAME = os.path.join(BASE_DIR, '..', os.getenv("DB_NAME"))
 WATCH_FOLDER = os.path.join(BASE_DIR, '..', os.getenv("WATCH_FOLDER"))
 SAVEING_PATH = os.path.join(BASE_DIR, '..', os.getenv("SAVEING_PATH"))
 
-DB_CONFIG = {
-    "dbname": "airflow",
-    "user": "airflow",
-    "password": "airflow",
-    "host": "postgres",
-    "port": "5432"
+PG_PARAMS = {
+    "dbname": os.getenv("PG_DBNAME"),
+    "user": os.getenv("PG_USER"),
+    "password": os.getenv("PG_PASSWORD"),
+    "host": os.getenv("PG_HOST"),
+    "port": os.getenv("PG_PORT")
 }

@@ -1,5 +1,9 @@
 import re
 from dateutil import parser
+import os
+import pandas as pd
+import psycopg2
+from app.app_config import PG_PARAMS, SAVEING_PATH
 
 def extract_receiver_name_from_filename(filename):
     match = re.search(r'\((.*?)\)', filename)
@@ -43,7 +47,7 @@ def extract_date(text, pattern, is_arabic=False):
 
     if is_arabic:
         day, month_ar, time, year = match.groups()
-        day = day.replace('.', '')  # For Ones days OCR convert "٠ ١ May" to ". 1 May"
+        day = day.replace('.', '')
         month = convert_arabic_month_to_english(month_ar)
     else:
         day, month, year, time = match.groups()
@@ -69,3 +73,49 @@ def extract_transaction_id(text):
     if match:
         return None, "pending.."
     return None, "completed"
+
+def extract_egyptian_phone_number_cach(text, n):
+    text_cleaned = re.sub(r'(\d)\s+(\d)', r'\1\2', text)
+    matches = re.findall(r'(?:010|011|012|015)\d{8}', text_cleaned)
+    if len(matches) >= 2:
+        return matches[n] # 0 for sender & 1 for receiver
+    else:
+        return None
+
+def export_transactions_to_excel(start, end):
+    try:
+        conn = psycopg2.connect(**PG_PARAMS)
+        cur = conn.cursor()
+
+        query = """
+        SELECT 
+            t.date,
+            b.bank_name,
+            t.receiver,
+            t.phone_number,
+            t.amount,
+            t.transaction_id,
+            t.status
+        FROM transactions t
+        JOIN senders s ON t.sender = s.id
+        LEFT JOIN bank_name b ON s.id = b.id
+        WHERE t.date BETWEEN %s AND %s
+        ORDER BY t.date DESC;
+        """
+
+        cur.execute(query, (start, end))
+        rows = cur.fetchall()
+        columns = [desc[0] for desc in cur.description]
+        conn.close()
+
+        if not rows:
+            return None
+
+        df = pd.DataFrame(rows, columns=columns)
+        os.makedirs(SAVEING_PATH, exist_ok=True)
+        file_path = os.path.join(SAVEING_PATH, f"Transactions {start} to {end}.xlsx")
+        df.to_excel(file_path, index=False)
+        return file_path
+    except Exception as e:
+        print(f"Export error: {e}")
+        return None

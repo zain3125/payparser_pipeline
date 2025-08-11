@@ -2,6 +2,7 @@ from app.utils import extract_receiver_name_from_filename
 from app.db import insert_transaction
 
 def process_transactions(ti, tx_type, parser_function):
+    print("Running processing...")
     classified = ti.xcom_pull(task_ids='ocr_and_classify_task', key='classified')
     if not classified:
         print(f"No classified data found for {tx_type}.")

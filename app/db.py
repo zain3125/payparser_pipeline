@@ -1,14 +1,14 @@
-import sqlite3
-from app.app_config import DB_NAME
+import psycopg2
+from app.app_config import PG_PARAMS
 
 def create_tables(cursor):
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS senders (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         username TEXT UNIQUE
     )
     """)
-    
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS bank_name (
         id INTEGER PRIMARY KEY,
@@ -16,11 +16,11 @@ def create_tables(cursor):
         FOREIGN KEY (id) REFERENCES senders(id)
     )
     """)
-    
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS transactions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date TEXT DEFAULT (datetime('now', '+3 hours')),
+        id SERIAL PRIMARY KEY,
+        date TIMESTAMP DEFAULT (NOW() + INTERVAL '3 hours'),
         sender INTEGER,
         receiver TEXT,
         phone_number TEXT,
@@ -34,16 +34,17 @@ def create_tables(cursor):
 def get_or_create_sender(cursor, username):
     if not username:
         return None
-    cursor.execute("SELECT id FROM senders WHERE username = ?", (username,))
+    cursor.execute("SELECT id FROM senders WHERE username = %s", (username,))
     result = cursor.fetchone()
     if result:
         return result[0]
-    cursor.execute("INSERT INTO senders (username) VALUES (?)", (username,))
-    return cursor.lastrowid
+    cursor.execute("INSERT INTO senders (username) VALUES (%s) RETURNING id", (username,))
+    return cursor.fetchone()[0]
 
 def insert_transaction(amount, sender, receiver_name, phone_number, date, transaction_id, status):
+    conn = None
     try:
-        conn = sqlite3.connect(DB_NAME)
+        conn = psycopg2.connect(**PG_PARAMS)
         cursor = conn.cursor()
 
         # Ensure tables exist
@@ -55,9 +56,10 @@ def insert_transaction(amount, sender, receiver_name, phone_number, date, transa
         # Prepare insert statement
         if date:
             query = """
-            INSERT OR IGNORE INTO transactions 
+            INSERT INTO transactions 
             (date, sender, receiver, phone_number, amount, transaction_id, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (transaction_id) DO NOTHING
             """
             cursor.execute(query, (
                 date, sender_id, receiver_name, phone_number, amount,
@@ -66,9 +68,10 @@ def insert_transaction(amount, sender, receiver_name, phone_number, date, transa
             ))
         else:
             query = """
-            INSERT OR IGNORE INTO transactions 
+            INSERT INTO transactions 
             (sender, receiver, phone_number, amount, transaction_id, status)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            ON CONFLICT (transaction_id) DO NOTHING
             """
             cursor.execute(query, (
                 sender_id, receiver_name, phone_number, amount,
@@ -79,8 +82,9 @@ def insert_transaction(amount, sender, receiver_name, phone_number, date, transa
         conn.commit()
         print("Inserted transaction into table: transactions")
 
-    except sqlite3.Error as e:
+    except psycopg2.Error as e:
         print(f"Database error: {e}")
 
     finally:
-        conn.close()
+        if conn:
+            conn.close()

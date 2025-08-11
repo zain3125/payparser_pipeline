@@ -1,10 +1,10 @@
 import os
-import sqlite3
+import psycopg2
 import pandas as pd
 import tkinter as tk
 from tkinter import ttk, messagebox
-from app_config import DB_NAME, SAVEING_PATH
 from datetime import datetime
+from app_config import PG_PARAMS, SAVEING_PATH
 
 # Create date choices
 days = [f"{i:02}" for i in range(1, 32)]
@@ -42,13 +42,12 @@ def export_to_excel():
         return
 
     try:
-        conn = sqlite3.connect(DB_NAME)
+        conn = psycopg2.connect(**PG_PARAMS)
+        cursor = conn.cursor()
 
         query = """
         SELECT 
-            t.id AS transaction_id,
             t.date,
-            s.username AS sender_username,
             b.bank_name,
             t.receiver,
             t.phone_number,
@@ -58,12 +57,20 @@ def export_to_excel():
         FROM transactions t
         JOIN senders s ON t.sender = s.id
         LEFT JOIN bank_name b ON s.id = b.id
-        WHERE t.date BETWEEN ? AND ?
+        WHERE t.date BETWEEN %s AND %s
         ORDER BY t.date DESC;
         """
 
-        df = pd.read_sql_query(query, conn, params=(start, end))
+        cursor.execute(query, (start, end))
+        columns = [desc[0] for desc in cursor.description]
+        rows = cursor.fetchall()
         conn.close()
+
+        if not rows:
+            messagebox.showinfo("No Data", "No transactions found for selected date range.")
+            return
+
+        df = pd.DataFrame(rows, columns=columns)
 
         file_name = f"Transactions from {start} to {end}.xlsx"
         os.makedirs(SAVEING_PATH, exist_ok=True)
@@ -71,6 +78,7 @@ def export_to_excel():
 
         df.to_excel(file_path, index=False)
         messagebox.showinfo("Saved", f"Successfully saved in:\n{file_path}")
+
     except Exception as e:
         messagebox.showerror("Error", f"Failed to save:\n{e}")
 
