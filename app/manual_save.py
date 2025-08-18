@@ -55,8 +55,8 @@ def export_to_excel():
             t.transaction_id,
             t.status
         FROM transactions t
-        JOIN senders s ON t.sender = s.id
-        LEFT JOIN bank_name b ON s.id = b.id
+        JOIN senders s ON t.sender = s.sender_id
+        LEFT JOIN bank_name b ON s.sender_id = b.bank_id
         WHERE t.date BETWEEN %s AND %s
         ORDER BY t.date DESC;
         """
