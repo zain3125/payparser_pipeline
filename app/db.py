@@ -4,22 +4,22 @@ from app.app_config import PG_PARAMS
 def create_tables(cursor):
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS senders (
-        id SERIAL PRIMARY KEY,
+        sender_id SERIAL PRIMARY KEY,
         username TEXT UNIQUE
     )
     """)
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS bank_name (
-        id INTEGER PRIMARY KEY,
+        bank_id INTEGER PRIMARY KEY,
         bank_name TEXT,
-        FOREIGN KEY (id) REFERENCES senders(id)
+        FOREIGN KEY (bank_id) REFERENCES senders(sender_id)
     )
     """)
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS transactions (
-        id SERIAL PRIMARY KEY,
+        internal_transaction_id SERIAL PRIMARY KEY,
         date TIMESTAMP DEFAULT (NOW() + INTERVAL '3 hours'),
         sender INTEGER,
         receiver TEXT,
@@ -27,18 +27,18 @@ def create_tables(cursor):
         amount INTEGER,
         transaction_id TEXT UNIQUE,
         status TEXT DEFAULT 'completed',
-        FOREIGN KEY (sender) REFERENCES senders(id)
+        FOREIGN KEY (sender) REFERENCES senders(sender_id)
     )
     """)
 
 def get_or_create_sender(cursor, username):
     if not username:
         return None
-    cursor.execute("SELECT id FROM senders WHERE username = %s", (username,))
+    cursor.execute("SELECT sender_id FROM senders WHERE username = %s", (username,))
     result = cursor.fetchone()
     if result:
         return result[0]
-    cursor.execute("INSERT INTO senders (username) VALUES (%s) RETURNING id", (username,))
+    cursor.execute("INSERT INTO senders (username) VALUES (%s) RETURNING sender_id", (username,))
     return cursor.fetchone()[0]
 
 def insert_transaction(amount, sender, receiver_name, phone_number, date, transaction_id, status):
