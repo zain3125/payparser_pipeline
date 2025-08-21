@@ -24,6 +24,7 @@ def parse_transaction_details_instapay(text):
 def parse_transaction_details_cash(text, filename):
     text = text.translate(str.maketrans("٫٠١٢٣٤٥٦٧٨٩", ".0123456789"))
     text = text.replace(",", "")
+    text = text.replace(".", "0")
     phone_number = extract_egyptian_phone_number_cach(text, 1)
     amount = extract_amount(text, r"([\d.]+)\s*جنيه")
     date = extract_date(text, r"(\d{1,2})\s+(\w+)\s+(\d{4})\s+(\d{1,2}:\d{2})", is_arabic=True)
