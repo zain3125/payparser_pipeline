@@ -5,6 +5,7 @@ __pycache__/
 
 # Environment files
 .env
+payparser-env/
 
 # Excel and CSV files
 *.xlsx
@@ -15,14 +16,6 @@ __pycache__/
 *.jpg
 *.jpeg
 *.png
-*.gif
-*.bmp
-*.tiff
-*.webp
-
-# Database files
-*.sqlite3
-*.db
 
 # JSON files
 *.json
@@ -32,14 +25,9 @@ node_modules/
 tokens/
 whatsapp-bot/.wwebjs_cache/
 whatsapp-bot/auth/
-
-# VSCode settings (optional, remove if needed)
-.vscode/
-
-# MacOS & Windows system files (optional)
-.DS_Store
-Thumbs.db
-
+whatsapp-bot/bot_log.txt
+whatsapp-bot/chrome_data/
+whatsapp-bot/index.html
 # logs folder
 airflow/logs/
 airflow\logs\scheduler\2025-06-13

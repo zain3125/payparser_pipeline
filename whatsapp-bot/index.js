@@ -2,11 +2,16 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const qrcode = require('qrcode-terminal');
-const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
+const { Client, LocalAuth } = require('whatsapp-web.js');
 
 const AIRFLOW_API_BASE = 'http://localhost:8080/api/v1/variables';
 const AIRFLOW_USERNAME = 'airflow';
 const AIRFLOW_PASSWORD = 'airflow';
+
+const now = new Date();
+const todayDate = now.toLocaleDateString('en-US', { day: '2-digit', month: 'long' });
+
+console.log(`📥 Fetching ${todayDate} images`);
 
 async function getAirflowVariable(key) {
     try {
@@ -43,10 +48,33 @@ async function startBot() {
     }
 
     const client = new Client({
-        authStrategy: new LocalAuth({ dataPath: './auth' })
+        authStrategy: new LocalAuth({
+            dataPath: path.join(__dirname, 'auth', 'session')
+        }),
+        puppeteer: {
+            executablePath: '/snap/bin/brave',
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                `--user-data-dir=${path.join(__dirname, 'chrome_data')}`
+            ]
+        }
     });
 
     client.on('qr', qr => qrcode.generate(qr, { small: true }));
+    
+    client.on('auth_failure', msg => {
+        console.error('❌ Authentication failed:', msg);
+    });
+
+    client.on('disconnected', reason => {
+        console.error('❌ Client was disconnected:', reason);
+    });
+
+    client.on('loading_screen', (percent, message) => {
+        console.log('⏳ Loading...', percent, message);
+    });
 
     client.on('ready', async () => {
         console.log('✅ WhatsApp is ready!');
@@ -58,10 +86,12 @@ async function startBot() {
             console.log('❌ Group not found!');
             return;
         }
-
-        console.log(`📥 Fetching today's images from group: ${group.name}`);
-
+    
         const now = new Date();
+        const todayDate = now.toLocaleDateString('en-US', { day: '2-digit', month: 'long' });
+
+        console.log(`📥 Fetching ${todayDate} images from group: ${group.name}`);
+
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
         const endOfRange = now;
 
@@ -73,7 +103,8 @@ async function startBot() {
                 try {
                     const media = await msg.downloadMedia();
                     const ext = media.mimetype.split('/')[1];
-                    const author = msg.author || msg.from;
+                    const author = msg.author || null;
+                    if (!author) continue;
                     const authorName = authorNames[author] || author;
 
                     const folderPath = path.join(__dirname, '..', 'airflow', 'shared', 'downloads', authorName);
@@ -97,10 +128,11 @@ async function startBot() {
         }
 
         console.log('✅ Done. Exiting...');
+        console.log('***********************************');
         process.exit(0);
     });
 
-    client.initialize();
+    client.initialize({ timeout: 60000 });
 }
 
 startBot();

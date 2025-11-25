@@ -84,13 +84,11 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
-    # The following volumes are used to share data between the Airflow containers and the host machine
     - ${AIRFLOW_PROJ_DIR:-.}/shared:/opt/airflow/shared
     - ${AIRFLOW_PROJ_DIR:-.}/app:/opt/airflow/app
     - ${AIRFLOW_PROJ_DIR:-.}/data_bases:/opt/airflow/data_bases
+    - ${AIRFLOW_PROJ_DIR:-.}/Excell_sheets:/opt/airflow/Excell_sheets
     - ../app:/opt/airflow/app
-    - ../data_bases:/opt/airflow/data_bases
-    - ../Excell_sheets:/opt/airflow/Excell_sheets
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -107,7 +105,7 @@ services:
       POSTGRES_PASSWORD: airflow
       POSTGRES_DB: airflow
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
     healthcheck:
