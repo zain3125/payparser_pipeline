@@ -25,7 +25,7 @@ A complete end-to-end pipeline for extracting, classifying, and storing transact
 
 ## 🖼️ Overview
 
-PayParser Pipeline automates the extraction and organization of transaction data from images of receipts (e.g., sent via WhatsApp). It uses a WhatsApp bot to collect images, OCR to extract text, Python logic to parse and classify transactions, and Airflow to orchestrate the workflow and store results in a SQLite database.
+PayParser Pipeline automates the extraction and organization of transaction data from images of receipts (e.g., sent via WhatsApp). It uses a WhatsApp bot to collect images, OCR to extract text, Python logic to parse and classify transactions, and Airflow to orchestrate the workflow and store results in a PostgreSQL database.
 
 ---
 
@@ -45,7 +45,7 @@ airflow/shared/downloads/ (images)
     │
     ├─ OCR & Classification
     ├─ Image Renaming by Transaction ID
-    └─ Database Insertion (SQLite)
+    └─ Database Insertion (PostgreSQL)
     │
     ▼
 airflow/shared/tmp/classified_results.json
@@ -60,10 +60,10 @@ airflow/shared/tmp/classified_results.json
 
 - **WhatsApp Integration:** Downloads images from a specified WhatsApp group, organizes them by sender.
 - **Automated Folder Monitoring:** Detects new images for processing.
-- **OCR Extraction:** Uses [OCR.Space API](https://ocr.space/) for text extraction.
+- **OCR Extraction: Uses Azure AI Vision API for high-accuracy text extraction and receipt recognition.
 - **Transaction Classification:** Distinguishes between Instapay and Vodafone Cash receipts.
 - **Image Renaming:** Renames images by transaction ID for traceability.
-- **Structured Data Storage:** Saves parsed data into a SQLite3 database.
+- **Structured Data Storage:** Saves parsed data into a PostgreSQL database.
 - **Airflow Orchestration:** Modular, scheduled, and visualized pipeline management.
 - **Excel Export:** Export all transactions to Excel via a simple GUI.
 
@@ -153,7 +153,7 @@ docker-compose up -d
 Create a `.env` file in the project root with:
 
 ```env
-OCR_API_URL=https://api.ocr.space/parse/image
+AZURE_VISION_ENDPOINT=YOUR_AZURE_ENDPOINT
 OCR_API_KEY=YOUR_OCR_API_KEY
 DB_NAME=data_bases/system_data.db
 WATCH_FOLDER=whatsapp-bot/downloads
@@ -172,7 +172,7 @@ AIRFLOW_UID=50000
   - `author_names`: JSON mapping WhatsApp IDs to readable names.
 
 - **OCR API:**  
-  Get your API key from [OCR.Space](https://ocr.space/ocrapi).
+  Get your API key from Azure AI Vision (Azure Portal → Cognitive Services → Vision API).
 
 ---
 
@@ -185,7 +185,7 @@ AIRFLOW_UID=50000
    - Detects new images not yet processed.
    - Runs OCR and classifies each image as Instapay or Cash.
    - Renames images by transaction ID.
-   - Parses transaction details and inserts them into the SQLite database.
+   - Parses transaction details and inserts them into the PostgreSQL database.
 
 3. **Export:**  
    Use the GUI (`app/save.py`) to export all transactions to Excel.
@@ -217,9 +217,9 @@ AIRFLOW_UID=50000
 
 ## 🐍 App Module Details
 
-- **OCR:** [`app/ocr.py`](app/ocr.py) — Calls OCR.Space API.
+- **OCR:** [`app/ocr.py`](app/ocr.py) — Calls OCR.Azure API.
 - **Parsing:** [`app/parser.py`](app/parser.py) — Extracts transaction details.
-- **Database:** [`app/db.py`](app/db.py) — Inserts transactions into SQLite.
+- **Database:** [`app/db.py`](app/db.py) — Inserts transactions into PostgreSQL.
 - **Utilities:** [`app/utils.py`](app/utils.py) — Helper functions for parsing.
 - **Export:** [`app/save.py`](app/save.py) — GUI for exporting data to Excel.
 
@@ -247,7 +247,7 @@ A simple GUI will appear. Click "Export to Excel Sheet" and the file will be sav
   - Check folder permissions.
 
 - **OCR API errors?**  
-  Check your API key and usage limits at [OCR.Space](https://ocr.space/ocrapi).
+  Check your endpoint and key in Azure Portal under your Vision Resource.
 
 - **Database issues?**  
   Verify the path in your `.env` file and permissions.
