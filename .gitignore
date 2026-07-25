@@ -6,7 +6,7 @@ __pycache__/
 # Environment files
 .env
 payparser-env/
-
+telegram-listener/tele-venv/
 # Excel and CSV files
 *.xlsx
 *.xls
