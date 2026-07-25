@@ -1,146 +1,171 @@
-# 💸 PayParser Pipeline
+# PayParser Pipeline
 
-A complete end-to-end pipeline for extracting, classifying, and storing transaction data from WhatsApp receipt images using OCR, with orchestration via Apache Airflow and WhatsApp integration via a Node.js bot.
+End-to-end transaction receipt processing pipeline that collects images from Telegram, extracts text via OCR, classifies and parses transaction details, and stores structured data in PostgreSQL — orchestrated by Apache Airflow.
 
----
+## Overview
 
-## 📚 Table of Contents
+This project automates the extraction and organization of transaction data from receipt images shared in a Telegram group. Images are collected by a Telethon-based bot, then processed through an Airflow-orchestrated pipeline that performs OCR (Azure Computer Vision), classifies receipts as Instapay or Vodafone Cash, parses transaction details, and stores everything in a PostgreSQL database. Results can be exported to Excel via a Tkinter GUI.
 
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Features](#features)
-- [Folder Structure](#folder-structure)
-- [Setup & Installation](#setup--installation)
-- [Configuration](#configuration)
-- [How It Works](#how-it-works)
-- [WhatsApp Bot Details](#whatsapp-bot-details)
-- [Airflow DAG Logic](#airflow-dag-logic)
-- [App Module Details](#app-module-details)
-- [Exporting Data](#exporting-data)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [License](#license)
+The pipeline handles Arabic and English text, Egyptian phone numbers, Arabic-Indic numeral conversion, and multiple receipt formats.
 
----
+## Architecture & Data Flow
 
-## 🖼️ Overview
-
-PayParser Pipeline automates the extraction and organization of transaction data from images of receipts (e.g., sent via WhatsApp). It uses a WhatsApp bot to collect images, OCR to extract text, Python logic to parse and classify transactions, and Airflow to orchestrate the workflow and store results in a PostgreSQL database.
-
----
-
-## 🏗️ Architecture
-
+```text
+Telegram Group
+      |
+      v
+telegram-listener/bot.py (Telethon)
+      |
+      v
+airflow/shared/downloads/{sender}/
+      |
+      v
+Airflow DAG (payparser_dag.py)
+      |
+      |-- detect_new_images (ShortCircuit)
+      |         |
+      |         v
+      |-- ocr_and_classify
+      |         |
+      |         +-- Azure Computer Vision OCR
+      |         +-- Classify: instapay vs cash
+      |         |
+      |         v
+      |-- [instapay_processing]    (parallel)
+      |     [cash_processing]      (parallel)
+      |         |
+      |         +-- Parse transaction details
+      |         +-- Insert into PostgreSQL
+      |         |
+      |         v
+      +-- rename_images
+                |
+                +-- Rename by transaction ID
+                +-- Archive processed files
+                |
+                v
+         PostgreSQL Database
+                |
+                v
+      manual_save.py (Tkinter GUI)
+                |
+                v
+         Excel Export
 ```
-WhatsApp Group
-    │
-    ▼
-[whatsapp-bot (Node.js)]
-    │
-    ▼
-airflow/shared/downloads/ (images)
-    │
-    ▼
-[Airflow DAG]
-    │
-    ├─ OCR & Classification
-    ├─ Image Renaming by Transaction ID
-    └─ Database Insertion (PostgreSQL)
-    │
-    ▼
-airflow/shared/tmp/classified_results.json
-    │
-    ▼
-[Export to Excel (GUI)]
-```
 
----
+## Technologies Used
 
-## 🚀 Features
+- **Python 3.12** — Core language for bot, tasks, and parsing logic
+- **Telethon** — Telegram user client for reading group messages and downloading media
+- **Apache Airflow 2.10.5** — Workflow orchestration (CeleryExecutor)
+- **Docker** — Containerized Airflow deployment
+- **PostgreSQL** — Transaction data storage
+- **Azure Computer Vision** — OCR text extraction from receipt images
+- **Pandas / openpyxl** — Excel export
+- **Tkinter** — Manual export GUI
+- **Requests** — Airflow REST API communication
+- **python-dotenv** — Environment variable management
 
-- **WhatsApp Integration:** Downloads images from a specified WhatsApp group, organizes them by sender.
-- **Automated Folder Monitoring:** Detects new images for processing.
-- **OCR Extraction: Uses Azure AI Vision API for high-accuracy text extraction and receipt recognition.
-- **Transaction Classification:** Distinguishes between Instapay and Vodafone Cash receipts.
-- **Image Renaming:** Renames images by transaction ID for traceability.
-- **Structured Data Storage:** Saves parsed data into a PostgreSQL database.
-- **Airflow Orchestration:** Modular, scheduled, and visualized pipeline management.
-- **Excel Export:** Export all transactions to Excel via a simple GUI.
-
----
-
-## 📁 Folder Structure
+## Project Structure
 
 ```
 payparser_pipeline/
-├── airflow/
-│   ├── config/
-│   ├── dags/
-│   │   ├── payparser_dag.py
-│   │   └── to_csv_dag.py
-│   ├── logs/
-│   ├── plugins/
-│   └── docker-compose.yaml
-├── app/
-│   ├── airflow_config.py
-│   ├── classify.py
-│   ├── detect.py
-│   ├── process.py
-│   ├── rename.py
-│   ├── app_config.py
-│   ├── db.py
-│   ├── ocr.py
-│   ├── parser.py
-│   ├── save.py
-│   ├── utils.py
-│   └── tasks/
-│	    ├── airflow_config.py
-│   	├── classify.py
-│   	├── detect.py
-│   	├── process.py
-│		└── rename.py
-├── shared/
-│   ├── downloads/
-│   ├── tmp/
-│   │   └── classified_results.json
-│   └── processed_images.txt
-├── data_bases/
-│   └── system_data.db
-├── Excell_sheets/
-├── whatsapp-bot/
-│   └── index.js
-├── .env
+├── .env                              # Global config (OCR, Postgres, paths)
 ├── .gitignore
 ├── README.md
-└── requirements.txt
+│
+├── telegram-listener/                # Image ingestion from Telegram
+│   ├── .env                          # Telegram API_ID, API_HASH, GROUP_NAME
+│   ├── bot.py                        # Telethon client, downloads today's photos
+│   ├── config.py                     # Loads .env into constants
+│   ├── requirements.txt              # telethon, python-dotenv
+│   └── session/                      # Telethon session persistence
+│
+├── app/                              # Core processing logic
+│   ├── app_config.py                 # Central config from .env
+│   ├── ocr.py                        # Azure Computer Vision OCR client
+│   ├── parser.py                     # Instapay & Cash receipt parsers
+│   ├── utils.py                      # Phone, date, amount, ID extraction helpers
+│   ├── db.py                         # PostgreSQL table creation + inserts
+│   ├── manual_save.py                # Tkinter GUI for Excel export
+│   └── tasks/                        # Airflow-callable task modules
+│       ├── airflow_config.py         # Container-internal path constants
+│       ├── detect.py                 # ShortCircuit: find new images
+│       ├── classify.py               # OCR + classify (instapay/cash)
+│       ├── process.py                # Parse + insert to database
+│       └── rename.py                 # Rename by transaction ID + archive
+│
+└── airflow/                          # Dockerized Airflow environment
+    ├── Dockerfile                    # apache/airflow:2.10.5 + custom deps
+    ├── docker-compose.yaml           # Full CeleryExecutor cluster
+    ├── requirements.txt              # Python deps for Airflow container
+    ├── dags/
+    │   └── payparser_dag.py          # DAG definition
+    ├── shared/                       # Runtime: downloads, tmp, archives
+    ├── config/                       # Airflow config overrides
+    ├── plugins/                      # Airflow plugins
+    ├── data_bases/                   # Legacy SQLite (unused)
+    ├── Excell_sheets/                # Excel export output
+    └── logs/                         # Airflow task logs
 ```
 
----
+## Setup
 
-## ⚡ Setup & Installation
+### Prerequisites
+
+- Python 3.12+
+- Docker and Docker Compose
+- PostgreSQL database (accessible at configured host/port)
+- Azure Computer Vision resource (endpoint + API key)
+- Telegram API credentials (from https://my.telegram.org)
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/payparser_pipeline.git
+git clone https://github.com/your-username/payparser_pipeline.git
 cd payparser_pipeline
 ```
 
-### 2. Python dependencies
+### 2. Configure environment variables
 
-```bash
-pip install -r requirements.txt
+Create a `.env` file in the project root:
+
+```env
+# Azure OCR
+OCR_API_URL=https://your-resource.cognitiveservices.azure.com/
+OCR_API_KEY=your_api_key
+
+# PostgreSQL
+PG_DBNAME=your_database
+PG_USER=your_user
+PG_PASSWORD=your_password
+PG_HOST=your_host
+PG_PORT=5432
+
+# Airflow
+AIRFLOW_UID=50000
+AIRFLOW_PROJ_DIR=.
+WATCH_FOLDER=airflow/shared/downloads
+SAVEING_PATH=Excell_sheets
 ```
 
-### 3. Node.js dependencies for WhatsApp bot
+Create a `.env` file in `telegram-listener/`:
 
-```bash
-cd whatsapp-bot
-npm install
-cd ..
+```env
+API_ID=your_telegram_api_id
+API_HASH=your_telegram_api_hash
+GROUP_NAME=your_group_name
+AUTHOR_NAMES={"sender_id":"Display Name"}
 ```
 
-### 4. Airflow setup (Docker)
+### 3. Set Airflow variables
+
+Set these via the Airflow UI (http://localhost:8080) or API:
+
+- `group_name` — Telegram group name to monitor
+- `author_names` — JSON mapping sender IDs to display names
+
+### 4. Start Airflow
 
 ```bash
 cd airflow
@@ -148,118 +173,113 @@ docker-compose up airflow-init
 docker-compose up -d
 ```
 
-### 5. Environment variables
+Access the Airflow UI at http://localhost:8080 (username: `airflow`, password: `airflow`).
 
-Create a `.env` file in the project root with:
-
-```env
-AZURE_VISION_ENDPOINT=YOUR_AZURE_ENDPOINT
-OCR_API_KEY=YOUR_OCR_API_KEY
-DB_NAME=data_bases/system_data.db
-WATCH_FOLDER=whatsapp-bot/downloads
-SAVEING_PATH=Excell_sheets
-AIRFLOW_PROJ_DIR=E:/python projects/payparser_pipeline
-AIRFLOW_UID=50000
-```
-
----
-
-## ⚙️ Configuration
-
-- **Airflow Variables:**  
-  Set via Airflow UI or API:
-  - `group_name`: WhatsApp group name to monitor.
-  - `author_names`: JSON mapping WhatsApp IDs to readable names.
-
-- **OCR API:**  
-  Get your API key from Azure AI Vision (Azure Portal → Cognitive Services → Vision API).
-
----
-
-## 🔄 How It Works
-
-1. **Image Collection:**  
-   The WhatsApp bot downloads images from the specified group and saves them in `shared/downloads/<author_name>/`.
-
-2. **Airflow DAG:**  
-   - Detects new images not yet processed.
-   - Runs OCR and classifies each image as Instapay or Cash.
-   - Renames images by transaction ID.
-   - Parses transaction details and inserts them into the PostgreSQL database.
-
-3. **Export:**  
-   Use the GUI (`app/save.py`) to export all transactions to Excel.
-
----
-
-## 🤖 WhatsApp Bot Details
-
-- **Location:** [`whatsapp-bot/index.js`](whatsapp-bot/index.js)
-- **Tech:** [venom-bot](https://github.com/orkestral/venom)
-- **How it works:**
-  - Connects to WhatsApp Web via QR code.
-  - Downloads images from the configured group.
-  - Organizes images by sender.
-  - Reads group and author info from Airflow variables via REST API.
-
----
-
-## 🌀 Airflow DAG Logic
-
-- **File:** [`airflow/dags/payparser_dag.py`](airflow/dags/payparser_dag.py)
-- **Main Tasks:**
-  1. **detect_new_images:** Finds new images in `shared/downloads/`.
-  2. **ocr_and_classify:** Runs OCR and classifies images.
-  3. **rename_images_task:** Renames images by transaction ID.
-  4. **instapay_processing_task / cash_processing_task:** Parses and inserts transaction data into the database.
-
----
-
-## 🐍 App Module Details
-
-- **OCR:** [`app/ocr.py`](app/ocr.py) — Calls OCR.Azure API.
-- **Parsing:** [`app/parser.py`](app/parser.py) — Extracts transaction details.
-- **Database:** [`app/db.py`](app/db.py) — Inserts transactions into PostgreSQL.
-- **Utilities:** [`app/utils.py`](app/utils.py) — Helper functions for parsing.
-- **Export:** [`app/save.py`](app/save.py) — GUI for exporting data to Excel.
-
----
-
-## 📤 Exporting Data
-
-To export all transactions to Excel:
+### 5. Set up the Telegram bot
 
 ```bash
-python app/save.py
+cd telegram-listener
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python bot.py
 ```
-A simple GUI will appear. Click "Export to Excel Sheet" and the file will be saved in the path specified by `SAVEING_PATH`.
 
----
+On first run, you will be prompted for your Telegram phone number and verification code. The session is saved in `telegram-listener/session/` for subsequent runs.
 
-## 🐞 Troubleshooting
+## How to Run
 
-- **Airflow webserver not starting?**  
-  Ensure ports 8080 and 5432 are free and Docker is running.
+### Automated (production)
 
-- **WhatsApp bot not downloading images?**  
-  - Make sure Airflow is running and variables are set.
-  - Scan the QR code on first run.
-  - Check folder permissions.
+1. Start Airflow: `cd airflow && docker-compose up -d`
+2. Run the Telegram bot (manually or as a systemd service): `python telegram-listener/bot.py`
+3. The Airflow DAG runs daily at 1:00 AM (Africa/Cairo timezone) and processes all new images
 
-- **OCR API errors?**  
-  Check your endpoint and key in Azure Portal under your Vision Resource.
+### Manual export
 
-- **Database issues?**  
-  Verify the path in your `.env` file and permissions.
+To export transactions to Excel:
 
----
+```bash
+cd app
+python manual_save.py
+```
 
-## 🤝 Contributing
+A Tkinter GUI will appear. Select a date range and click "Export to Excel Sheet". The file is saved to `Excell_sheets/`.
 
-Contributions are welcome! Please open issues or submit pull requests for improvements or bug fixes.
+## Pipeline Workflow
 
----
+### Step 1: Image Collection (`telegram-listener/bot.py`)
 
-## 📄 License
+- Connects to Telegram via Telethon user client
+- Finds the configured group by name from Airflow variables
+- Iterates over the last 500 messages
+- Filters to today's date only
+- Downloads only photo messages
+- Saves images to `airflow/shared/downloads/{sender_name}/`
+- Filenames follow the pattern: `photo_{timestamp}({caption}).jpg`
 
-This project is for educational and personal use. For commercial usage, please
+### Step 2: Image Detection (`app/tasks/detect.py`)
+
+- Walks `airflow/shared/downloads/` for `.jpg`, `.jpeg`, `.png` files
+- Pushes discovered file paths to XCom
+- Returns `False` (short-circuits the entire pipeline) if no new images found
+
+### Step 3: OCR & Classification (`app/tasks/classify.py`)
+
+- Pulls image paths from XCom
+- Sends each image to Azure Computer Vision Read API
+- Classifies as `instapay` if OCR text contains "EGP", otherwise `cash`
+- Saves results to `classified_results.json` and pushes to XCom
+- Includes retry logic with exponential backoff for rate-limited OCR calls
+
+### Step 4: Transaction Processing (`app/tasks/process.py`)
+
+Runs in parallel for both receipt types:
+
+- **Instapay**: Extracts amount, sender email, phone number, date, transaction ID, and status
+- **Cash**: Extracts amount, date, transaction ID; handles Arabic-Indic numeral conversion; sender derived from folder name
+- Inserts each transaction into PostgreSQL with duplicate detection (`ON CONFLICT DO NOTHING`)
+
+### Step 5: Image Renaming & Archival (`app/tasks/rename.py`)
+
+- Renames processed images to `{transaction_id}.{ext}` for traceability
+- Moves all processed files to an archive folder: `shared/Transactions DD Month YYYY`
+
+### Step 6: Export (optional)
+
+- `app/manual_save.py` provides a Tkinter GUI to query PostgreSQL and export to Excel
+
+## Database Schema
+
+Three tables in PostgreSQL:
+
+| Table | Columns | Purpose |
+|-------|---------|---------|
+| `senders` | `sender_id` (PK), `username` | Unique sender registry |
+| `bank_name` | `bank_id` (PK, FK -> senders), `bank_name` | Bank type per sender |
+| `transactions` | `internal_transaction_id` (PK), `date`, `sender` (FK), `receiver`, `phone_number`, `amount`, `transaction_id` (UNIQUE), `status` | All parsed transactions |
+
+## Key Analyses
+
+| Component | Description |
+|-----------|-------------|
+| OCR Extraction | Azure Computer Vision Read API with retry/backoff |
+| Instapay Parsing | Regex-based extraction of amount, sender, phone, date, transaction ID, status |
+| Cash Parsing | Arabic-Indic numeral conversion, Arabic month mapping, amount/date/ID extraction |
+| Phone Detection | Egyptian phone number patterns (010/011/012/015 + 8 digits) |
+| Sender Resolution | Maps Telegram sender IDs to display names via Airflow variables |
+| Duplicate Prevention | PostgreSQL `ON CONFLICT (transaction_id) DO NOTHING` |
+
+## Future Improvements
+
+- Add real-time image processing (process images as they arrive, not just daily)
+- Implement receipt validation before database insertion
+- Add support for additional receipt types (e.g., bank transfers)
+- Build a web dashboard for transaction monitoring
+- Add automated testing for parser functions
+- Implement CI/CD pipeline for deployment
+- Add Databricks-compatible notebook versions for cloud deployment
+
+## License
+
+This project is for educational and portfolio purposes.
