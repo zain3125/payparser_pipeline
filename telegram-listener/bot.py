@@ -1,50 +1,33 @@
 import asyncio
-import json
 import os
 import re
 from datetime import datetime, time
 
-import requests
 from telethon import TelegramClient
 from telethon.tl.types import MessageMediaPhoto
 
 from config import (
     API_ID,
     API_HASH,
-    AIRFLOW_API_BASE,
-    AIRFLOW_USERNAME,
-    AIRFLOW_PASSWORD,
+    GROUP_NAME,
+    AUTHOR_NAMES
 )
 
 DOWNLOADS_DIR = os.path.join(os.path.dirname(__file__), "..", "airflow", "shared", "downloads")
-
-
-def get_airflow_variable(key):
-    try:
-        response = requests.get(
-            f"{AIRFLOW_API_BASE}/{key}",
-            auth=(AIRFLOW_USERNAME, AIRFLOW_PASSWORD),
-        )
-        response.raise_for_status()
-        return response.json()["value"]
-    except Exception as e:
-        print(f"❌ Failed to fetch variable \"{key}\": {e}")
-        return None
-
 
 def sanitize_filename(text):
     step1 = re.sub(r'[^\u0600-\u06FF\w\s\-_()]', ' ', text)
     step2 = re.sub(r'\s+', ' ', step1)
     return step2[:50].strip()
 
-
 async def main():
-    group_name = get_airflow_variable("group_name")
-    author_names_raw = get_airflow_variable("author_names")
+    group_name = GROUP_NAME
+    author_names_raw = AUTHOR_NAMES
 
     author_names = {}
     try:
-        author_names = json.loads(author_names_raw or "{}")
+        author_names = author_names_raw or "{}"
+        print(author_names)
     except Exception as e:
         print(f"❌ Failed to parse author_names: {e}")
 
